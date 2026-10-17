@@ -1,0 +1,34 @@
+# phosphene-lab
+
+Simulation sandbox for encoding and calibrating cortical visual prostheses.
+The full plan is in `PROJECT_SPEC.md`; read the section for the current phase before starting work.
+
+## Commands
+
+- Install / update env: `py -m uv sync`
+- Tests: `.venv/Scripts/python.exe -m pytest` (CI also runs `-m "not slow"`)
+- Lint: `.venv/Scripts/python.exe -m ruff check .` and `ruff format .`
+- Phase 0 smoke run: `.venv/Scripts/python.exe scripts/render_reference.py --quick`
+
+## Conventions
+
+- Python >=3.11 (local venv is 3.11), CPU-only torch locally and in CI; Colab T4 for heavy training.
+- One YAML config per experiment in `configs/`; every script takes `--config` and `--quick` (< 2 min).
+- Seed everything. Scripts write to `results/`; nothing else does.
+- Reference simulators (pulse2percept, dynaphos) are wrapped in `src/phosphene_lab/simulator/reference.py`.
+
+## Rules (from PROJECT_SPEC.md §6)
+
+1. Never fabricate results. Every number in the README or report comes from a file in `results/`
+   produced by a script in `scripts/`. Report failures and underperformance as they are.
+2. Tests before simulator code. Physics-like behavior is tested before encoders build on it.
+3. Stay in budget: every run < 1 hour on a Colab T4 or laptop CPU. If not, shrink it and say so.
+4. Every modeling simplification gets one plain-language sentence in the README "Assumptions" section.
+5. Check in at phase boundaries: summarize, list open questions, wait for Bryce's go-ahead.
+6. Teach as you go: after each phase add a "How it works" note in `docs/how-it-works/`
+   for a smart non-specialist.
+7. Small commits with clear messages, at least one per milestone.
+8. Ask before large dependencies (> ~500 MB), paid services, scope changes, or collecting any
+   human data (Phase 6 requires CMC IRB approval before publication).
+
+If a citation cannot be verified, flag it instead of inventing details.

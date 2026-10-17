@@ -1,0 +1,22 @@
+# Phase 0: render one percept from each reference simulator to confirm installs.
+seed: 0
+output: results/phase0_reference.png
+
+pulse2percept:
+  implant: Orion        # 60-electrode cortical array
+  amplitude_uA: 80      # same current on every electrode
+  rho_um: 400           # current spread
+  field_deg: 5          # renders [-field, field] in both axes
+  step_deg: 0.1
+
+dynaphos:
+  params: configs/dynaphos_params.yaml
+  n_phosphenes: 256
+  resolution: 128
+  amplitude_A: 100.0e-6  # same current on every electrode
+  n_frames: 5            # dynaphos integrates over frames; render the last one
+
+# Overrides applied with --quick (CI smoke test, must finish in seconds).
+quick:
+  pulse2percept: {step_deg: 0.25}
+  dynaphos: {n_phosphenes: 64, resolution: 64, n_frames: 2}
