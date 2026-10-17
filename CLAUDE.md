@@ -9,6 +9,9 @@ The full plan is in `PROJECT_SPEC.md`; read the section for the current phase be
 - Tests: `.venv/Scripts/python.exe -m pytest` (CI also runs `-m "not slow"`)
 - Lint: `.venv/Scripts/python.exe -m ruff check .` and `ruff format .`
 - Phase 0 smoke run: `.venv/Scripts/python.exe scripts/render_reference.py --quick`
+- Phase 1 cross-check: `.venv/Scripts/python.exe scripts/compare_simulators.py [--quick]`
+- Configs load via `phosphene_lab.config.load_config`; every `quick:` block must redirect outputs
+  to `results/quick/` (git-ignored) so smoke runs never overwrite real results.
 
 ## Conventions
 
