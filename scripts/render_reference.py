@@ -13,17 +13,9 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
-import yaml  # noqa: E402
 
+from phosphene_lab.config import load_config  # noqa: E402
 from phosphene_lab.simulator.reference import render_dynaphos, render_pulse2percept  # noqa: E402
-
-
-def load_config(path: str, quick: bool) -> dict:
-    cfg = yaml.safe_load(Path(path).read_text())
-    if quick:
-        for section, overrides in cfg.get("quick", {}).items():
-            cfg[section].update(overrides)
-    return cfg
 
 
 def main() -> None:

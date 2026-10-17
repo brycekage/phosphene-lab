@@ -1,0 +1,26 @@
+# Phase 1: cross-check our renderer against dynaphos on identical phosphene locations.
+seed: 0
+output_png: results/phase1_vs_dynaphos.png
+output_csv: results/phase1_vs_dynaphos.csv
+
+array:
+  layout: grid           # grid | thread
+  n_electrodes: 256
+current_uA: 100.0        # same current on every electrode, both simulators
+
+render:
+  resolution: 128
+  field_deg: 20.0
+
+dynaphos:
+  params: configs/dynaphos_params.yaml
+  resolution: 128
+  field_deg: 20.0
+  uniform_thresholds: true  # remove dynaphos's random per-electrode thresholds
+  n_frames: 10              # dynaphos integrates activation over frames; use the last
+
+quick:
+  output_png: results/quick/phase1_vs_dynaphos.png
+  output_csv: results/quick/phase1_vs_dynaphos.csv
+  array: {n_electrodes: 64}
+  dynaphos: {n_frames: 3}

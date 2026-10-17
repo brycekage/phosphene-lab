@@ -61,18 +61,47 @@ def render_pulse2percept(cfg: dict[str, Any]) -> np.ndarray:
 
 def load_dynaphos_simulator(cfg: dict[str, Any], seed: int):
     """Build a dynaphos GaussianSimulator with randomly sampled phosphene locations."""
-    from dynaphos import cortex_models, utils
-    from dynaphos.simulator import GaussianSimulator
+    from dynaphos import cortex_models
+
+    params = _load_dynaphos_params(cfg, seed)
+    rng = np.random.default_rng(seed)
+    coords = cortex_models.get_visual_field_coordinates_probabilistically(
+        params, cfg["n_phosphenes"], rng
+    )
+    return _build_dynaphos(params, coords, rng)
+
+
+def load_dynaphos_simulator_at(
+    x_deg: np.ndarray, y_deg: np.ndarray, cfg: dict[str, Any], seed: int
+):
+    """Build a dynaphos GaussianSimulator with phosphenes at the given locations (deg).
+
+    Note: dynaphos images put the bottom of the visual field in row 0.
+    """
+    from dynaphos.utils import Map
+
+    params = _load_dynaphos_params(cfg, seed)
+    if "field_deg" in cfg:
+        params["run"]["view_angle"] = cfg["field_deg"]
+    if cfg.get("uniform_thresholds", False):
+        params["thresholding"]["activation_threshold_sd"] = 0.0
+    coords = Map(x=np.asarray(x_deg, dtype=float), y=np.asarray(y_deg, dtype=float))
+    return _build_dynaphos(params, coords, np.random.default_rng(seed))
+
+
+def _load_dynaphos_params(cfg: dict[str, Any], seed: int) -> dict:
+    from dynaphos import utils
 
     params = utils.load_params(cfg["params"])
     params["run"]["gpu"] = None  # CPU; dynaphos picks CUDA whenever gpu is set
     params["run"]["seed"] = seed
     params["run"]["resolution"] = [cfg["resolution"], cfg["resolution"]]
+    return params
 
-    rng = np.random.default_rng(seed)
-    coords = cortex_models.get_visual_field_coordinates_probabilistically(
-        params, cfg["n_phosphenes"], rng
-    )
+
+def _build_dynaphos(params: dict, coords, rng: np.random.Generator):
+    from dynaphos.simulator import GaussianSimulator
+
     with _preserve_global_torch_state():
         return GaussianSimulator(params, coords, rng)
 

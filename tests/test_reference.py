@@ -8,6 +8,7 @@ import torch
 
 from phosphene_lab.simulator.reference import (
     load_dynaphos_simulator,
+    load_dynaphos_simulator_at,
     render_dynaphos,
     render_pulse2percept,
 )
@@ -51,6 +52,16 @@ def test_dynaphos_leaves_global_torch_state_untouched():
     load_dynaphos_simulator(DYN_CFG, seed=0)
     assert torch.equal(torch.rand(3), expected)
     assert not torch.are_deterministic_algorithms_enabled()
+
+
+def test_dynaphos_places_phosphenes_at_requested_locations():
+    cfg = {**DYN_CFG, "resolution": 128, "field_deg": 20.0, "uniform_thresholds": True}
+    sim = load_dynaphos_simulator_at(np.array([5.0]), np.array([5.0]), cfg, seed=0)
+    for _ in range(5):
+        image = sim(torch.full((1,), 100e-6))
+    row, col = np.unravel_index(int(image.argmax()), tuple(image.shape))
+    assert col == pytest.approx(96, abs=1)  # x = +5 deg
+    assert row == pytest.approx(96, abs=1)  # dynaphos row 0 is the bottom: y = +5 deg is low
 
 
 def test_dynaphos_same_seed_same_output():

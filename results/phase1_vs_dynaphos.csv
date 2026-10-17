@@ -1,0 +1,7 @@
+metric,value
+n_electrodes,256
+current_uA,100.0
+pixel_correlation,0.6643
+sigma_max_relative_difference,0.005
+ours_mean_brightness,0.0557
+dynaphos_mean_brightness,0.0125

@@ -10,7 +10,10 @@ htmlcov/
 # Datasets are downloaded by scripts, never committed.
 data/
 
-# Training artifacts (results/ CSVs and figures ARE committed).
+# --quick smoke-run outputs; real results/ CSVs and figures ARE committed.
+results/quick/
+
+# Training artifacts.
 checkpoints/
 *.pt
 *.ckpt

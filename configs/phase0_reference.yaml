@@ -18,5 +18,6 @@ dynaphos:
 
 # Overrides applied with --quick (CI smoke test, must finish in seconds).
 quick:
+  output: results/quick/phase0_reference.png
   pulse2percept: {step_deg: 0.25}
   dynaphos: {n_phosphenes: 64, resolution: 64, n_frames: 2}
