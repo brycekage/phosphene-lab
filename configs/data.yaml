@@ -1,0 +1,31 @@
+# Phase 2 datasets: download raw files once into data/raw, write data/<name>/processed.npz.
+seed: 0
+root: data
+raw: data/raw
+summary_csv: results/data_summary.csv
+
+emnist:
+  n_train: 26000          # ~1000 per letter
+  n_test: 5200
+
+coco:
+  per_class: 70           # balanced: every class has >= 70 qualifying val2017 images
+  min_area_fraction: 0.05 # dominant object must cover at least this much of the frame
+  crop_pad: 0.15
+  size: 96
+  test_fraction: 0.2
+
+nyu:
+  height: 120
+  width: 160
+  near_m: 1.5             # ~2 steps; at 1.0 m, 78% of frames came out "none"
+  min_fraction: 0.15
+  test_fraction: 0.2      # by scene, so near-duplicate frames never straddle the split
+  max_frames: null
+
+quick:
+  root: data/quick
+  summary_csv: results/quick/data_summary.csv
+  emnist: {n_train: 520, n_test: 104}
+  coco: {per_class: 4}
+  nyu: {max_frames: 60}
