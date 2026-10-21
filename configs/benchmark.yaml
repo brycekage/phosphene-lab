@@ -1,0 +1,54 @@
+# Phase 3: encoder x electrode count x dropout x patient variability, 3 seeds each.
+# Budget: the full factorial would not fit in an hour on a laptop CPU, so variability is
+# swept only at one array size (see `variability_sweep`).
+seed: 0
+seeds: [0, 1, 2]
+patient_seed_offset: 500000   # E3 trains on patient seeds 0..steps-1; these are unseen
+data_root: data
+checkpoint_dir: checkpoints
+tasks: [letters, objects, obstacles]
+encoders: [E0, E1, E2, E3]
+limits:                       # images per split; null = all
+  letters: {train: 1300, test: 520}   # 50 + 20 per letter, for the compute budget
+  objects: {train: null, test: null}
+  obstacles: {train: null, test: null}
+
+main_sweep:
+  electrode_counts: [64, 256, 1024, 1600]
+  dropouts: [0.0, 0.1, 0.3]
+  variability: default
+variability_sweep:
+  electrode_count: 256
+  dropout: 0.1
+  levels: [low, default, high]
+
+# Observer: width 16 on 32-px percepts reaches 0.83 on raw (un-prosthetic) letters at 2600
+# train images, vs 0.84 for width 32, at a third of the cost.
+observer_epochs: 6
+observer_width: 16
+render:
+  resolution: 32
+  field_deg: 20.0
+  max_current_uA: 100.0
+
+output_csv: results/benchmark.csv
+summary_csv: results/benchmark_summary.csv
+headline_png: results/benchmark_accuracy_vs_electrodes.png
+dropout_png: results/benchmark_dropout.png
+variability_png: results/benchmark_variability.png
+
+quick:
+  seeds: [0]
+  tasks: [letters, objects]
+  checkpoint_dir: checkpoints/quick
+  limits:
+    letters: {train: 200, test: 100}
+    objects: {train: 100, test: 50}
+  main_sweep: {electrode_counts: [64, 256], dropouts: [0.0]}
+  variability_sweep: {levels: [default]}
+  observer_epochs: 2
+  output_csv: results/quick/benchmark.csv
+  summary_csv: results/quick/benchmark_summary.csv
+  headline_png: results/quick/benchmark_accuracy_vs_electrodes.png
+  dropout_png: results/quick/benchmark_dropout.png
+  variability_png: results/quick/benchmark_variability.png
