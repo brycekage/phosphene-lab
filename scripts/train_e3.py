@@ -45,7 +45,7 @@ def main() -> None:
     ckpt_dir = Path(cfg["checkpoint_dir"])
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    rows, curves = [], {}
+    rows = []
     for name in cfg["tasks"]:
         task = TASKS[name]
         images, labels, targets = load_task(task, "train", cfg["data_root"], cfg["train_limit"])
@@ -57,7 +57,7 @@ def main() -> None:
         torch.save(
             {"encoder": encoder.state_dict(), "observer": observer.state_dict(),
              "width": train_cfg.width, "max_side": train_cfg.max_side,
-             "n_classes": task.n_classes},
+             "n_classes": task.n_classes, "history": history},
             ckpt_dir / f"e3_{name}.pt",
         )  # fmt: skip
         tail = history[-max(1, len(history) // 10) :]  # last 10% of steps
@@ -66,11 +66,21 @@ def main() -> None:
              round(seconds / train_cfg.steps, 3)]
             + [round(float(np.mean([h[k] for h in tail])), 4) for k in ("recon", "task", "power")]
         )  # fmt: skip
-        curves[name] = history
         print(f"{name}: {seconds:.0f} s, final recon {rows[-1][5]}, task {rows[-1][6]}")
 
+    # Tasks can be trained in separate runs (--tasks): keep other tasks' rows and curves.
     out_csv = Path(cfg["output_csv"])
     out_csv.parent.mkdir(parents=True, exist_ok=True)
+    if out_csv.exists():
+        with out_csv.open(newline="") as fh:
+            kept = [r for r in list(csv.reader(fh))[1:] if r[0] not in cfg["tasks"]]
+        rows = kept + rows
+    curves = {
+        name: torch.load(ckpt_dir / f"e3_{name}.pt", weights_only=True)["history"]
+        for name in TASKS
+        if (ckpt_dir / f"e3_{name}.pt").exists()
+        and "history" in torch.load(ckpt_dir / f"e3_{name}.pt", weights_only=True)
+    }
     with out_csv.open("w", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow(

@@ -1,0 +1,23 @@
+# Phase 2: side-by-side percepts (original -> E2 target -> E0..E3) at two electrode counts.
+seed: 0
+data_root: data
+checkpoint_dir: checkpoints
+tasks: [letters, objects, obstacles]
+images_per_task: 2
+electrode_counts: [256, 1024]
+patient_seed: 900000         # E3 trains on seeds 0..steps-1, so this patient is unseen
+output_png: results/phase2_gallery.png
+output_csv: results/phase2_gallery.csv
+
+render:
+  resolution: 128
+  field_deg: 20.0
+  max_current_uA: 100.0
+
+quick:
+  images_per_task: 1
+  electrode_counts: [256]
+  checkpoint_dir: checkpoints/quick
+  output_png: results/quick/phase2_gallery.png
+  output_csv: results/quick/phase2_gallery.csv
+  render: {resolution: 64}
