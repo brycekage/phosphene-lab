@@ -14,6 +14,14 @@ dependencies = [
     "opencv-python-headless>=4.9",
     "pulse2percept>=0.11",
     "dynaphos>=0.1.3",
+    # Phase 2 encoders: segmentation weights (torchvision), monocular depth (transformers),
+    # NYU Depth V2's MATLAB v7.3 file (h5py).
+    "torchvision>=0.19",
+    "transformers>=4.45",
+    "h5py>=3.10",
+    # Phase 3 metrics (SSIM) and Phase 4 Bayesian active calibration.
+    "scikit-image>=0.24",
+    "botorch>=0.12",
 ]
 
 [dependency-groups]
@@ -35,6 +43,7 @@ packages = ["src/phosphene_lab"]
 # Colab T4 runs use Colab's preinstalled CUDA torch instead.
 [tool.uv.sources]
 torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
