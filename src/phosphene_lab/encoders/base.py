@@ -50,6 +50,12 @@ def fit_image_to_cloud(pmap: PhospheneMap, image_hw: tuple[int, int]) -> FieldBo
     return FieldBox(cx - width / 2, cx + width / 2, cy - height / 2, cy + height / 2)
 
 
+def luminance(images: Tensor) -> Tensor:
+    """Perceived brightness (ITU-R BT.601 weights). (B, 3, H, W) -> (B, 1, H, W)."""
+    weights = torch.tensor([0.299, 0.587, 0.114]).to(images).view(1, 3, 1, 1)
+    return (images * weights).sum(dim=1, keepdim=True)
+
+
 def sample_at_phosphenes(images: Tensor, pmap: PhospheneMap) -> Tensor:
     """Bilinear image values at each phosphene. (B, C, H, W) -> (B, C, N)."""
     box = fit_image_to_cloud(pmap, images.shape[-2:])
