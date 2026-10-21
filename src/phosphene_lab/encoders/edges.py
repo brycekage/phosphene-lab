@@ -11,7 +11,12 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from phosphene_lab.encoders.base import Encoder, luminance, sample_at_phosphenes
+from phosphene_lab.encoders.base import (
+    Encoder,
+    gaussian_blur,
+    luminance,
+    sample_at_phosphenes,
+)
 from phosphene_lab.simulator.phosphene import PhospheneMap, RenderConfig
 
 _SOBEL_X = torch.tensor([[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]]) / 8
@@ -25,20 +30,10 @@ def edge_map(images: Tensor, blur_px: float = 1.0, min_contrast: float = 0.1) ->
     # sqrt(0) has an infinite gradient, so add a tiny floor inside the root.
     magnitude = torch.sqrt(gx**2 + gy**2 + 1e-12).unsqueeze(1) - 1e-6
     if blur_px > 0:
-        magnitude = _gaussian_blur(magnitude, blur_px)
+        magnitude = gaussian_blur(magnitude, blur_px)
     # A low-contrast image keeps its faint edges faint instead of being stretched to 1.
     peak = magnitude.amax(dim=(2, 3), keepdim=True).clamp(min=min_contrast)
     return (magnitude / peak).clamp(0.0, 1.0)
-
-
-def _gaussian_blur(x: Tensor, sigma_px: float) -> Tensor:
-    radius = max(1, int(round(3 * sigma_px)))
-    t = torch.arange(-radius, radius + 1).to(x)
-    k = torch.exp(-(t**2) / (2 * sigma_px**2))
-    k = k / k.sum()
-    x = F.pad(x, (radius, radius, radius, radius), mode="replicate")
-    x = F.conv2d(x, k.view(1, 1, 1, -1))
-    return F.conv2d(x, k.view(1, 1, -1, 1))
 
 
 class EdgeEncoder(Encoder):

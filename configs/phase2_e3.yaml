@@ -1,0 +1,31 @@
+# Phase 2: train the learned encoder E3 (one model per task) through the simulator.
+seed: 0
+data_root: data
+tasks: [letters, objects, obstacles]
+train_limit: null            # images per task; null = whole train split
+checkpoint_dir: checkpoints
+output_csv: results/phase2_e3_training.csv
+output_png: results/phase2_e3_loss.png
+
+train:
+  steps: 1500
+  batch_size: 32
+  lr: 0.001
+  electrode_counts: [256, 1024]  # each step draws one, plus a fresh virtual patient
+  task_weight: 0.1
+  power_weight: 0.05
+  width: 16                      # measured ~0.26 s/step on a 12-thread laptop CPU
+  max_side: 48                   # COCO (96 px) and NYU (120x160) are shrunk for the budget
+
+num_threads: 4                   # faster than 12 here: the ops are too small to split well
+render:
+  resolution: 48
+  field_deg: 20.0
+  max_current_uA: 100.0
+
+quick:
+  train_limit: 64
+  checkpoint_dir: checkpoints/quick
+  output_csv: results/quick/phase2_e3_training.csv
+  output_png: results/quick/phase2_e3_loss.png
+  train: {steps: 15, batch_size: 8}

@@ -56,6 +56,17 @@ def luminance(images: Tensor) -> Tensor:
     return (images * weights).sum(dim=1, keepdim=True)
 
 
+def gaussian_blur(x: Tensor, sigma_px: float) -> Tensor:
+    """Separable Gaussian blur with edge-replicating padding. (B, C, H, W) -> same shape."""
+    radius = max(1, int(round(3 * sigma_px)))
+    t = torch.arange(-radius, radius + 1).to(x)
+    k = torch.exp(-(t**2) / (2 * sigma_px**2))
+    k = (k / k.sum()).repeat(x.shape[1], 1)  # one kernel per channel
+    x = F.pad(x, (radius, radius, radius, radius), mode="replicate")
+    x = F.conv2d(x, k.view(x.shape[1], 1, 1, -1), groups=x.shape[1])
+    return F.conv2d(x, k.view(x.shape[1], 1, -1, 1), groups=x.shape[1])
+
+
 def sample_at_phosphenes(images: Tensor, pmap: PhospheneMap) -> Tensor:
     """Bilinear image values at each phosphene. (B, C, H, W) -> (B, C, N)."""
     box = fit_image_to_cloud(pmap, images.shape[-2:])
@@ -71,6 +82,22 @@ def sample_at_phosphenes(images: Tensor, pmap: PhospheneMap) -> Tensor:
     return values[:, :, 0]
 
 
+def image_to_field(images: Tensor, pmap: PhospheneMap, config: RenderConfig) -> Tensor:
+    """Resample images onto the renderer's pixel grid, placed as the encoders place them.
+
+    Lets a percept be compared pixel-for-pixel with the image it was meant to show. Pixels
+    outside the fitted box are 0. (B, C, H, W) -> (B, C, resolution, resolution).
+    """
+    box = fit_image_to_cloud(pmap, images.shape[-2:])
+    half, px = config.field_deg / 2, config.field_deg / config.resolution
+    centers = torch.linspace(-half + px / 2, half - px / 2, config.resolution)
+    gx = 2 * (centers - box.x_min_deg) / (box.x_max_deg - box.x_min_deg) - 1
+    gy = 2 * (box.y_max_deg - centers.flip(0)) / (box.y_max_deg - box.y_min_deg) - 1
+    grid = torch.stack(torch.meshgrid(gx, gy, indexing="xy"), dim=-1).to(images)
+    grid = grid.expand(images.shape[0], -1, -1, -1)
+    return F.grid_sample(images, grid, mode="bilinear", padding_mode="zeros", align_corners=False)
+
+
 class Encoder(nn.Module):
     """Base class: subclasses implement ``stimulate``; ``forward`` applies hardware limits."""
 
@@ -83,5 +110,9 @@ class Encoder(nn.Module):
         raise NotImplementedError
 
     def forward(self, images: Tensor, pmap: PhospheneMap) -> Tensor:
-        stim = self.stimulate(images, pmap) * pmap.alive.to(images)
+        return self.finalize(self.stimulate(images, pmap), pmap)
+
+    def finalize(self, stim: Tensor, pmap: PhospheneMap) -> Tensor:
+        """Silence electrodes the map marks dead, then apply the hardware limits."""
+        stim = stim * pmap.alive.to(stim)
         return enforce_limits(stim, self.config.max_current_uA, self.config.max_active)

@@ -21,7 +21,9 @@ reconstruction goal for the learned encoder E3.
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor
@@ -161,5 +163,32 @@ class SceneEncoder(Encoder):
         return simplify(images, nearness.to(images), seg.to(images.device), self.mode)
 
     def stimulate(self, images: Tensor, pmap: PhospheneMap) -> Tensor:
-        value = sample_at_phosphenes(self.target(images), pmap)[:, 0]
+        return self._from_target(self.target(images), pmap)
+
+    def encode_targets(self, targets: Tensor, pmap: PhospheneMap) -> Tensor:
+        """Same as ``forward`` but from precomputed targets, skipping the networks."""
+        return self.finalize(self._from_target(targets, pmap), pmap)
+
+    def _from_target(self, targets: Tensor, pmap: PhospheneMap) -> Tensor:
+        value = sample_at_phosphenes(targets, pmap)[:, 0]
         return torch.where(value > self.threshold, value, 0.0) * self.on_current_uA
+
+
+def cached_targets(
+    encoder: SceneEncoder, images: Tensor, path: str | Path, batch_size: int = 32
+) -> Tensor:
+    """Simplified scenes for a whole dataset, computed once and stored as uint8 at ``path``.
+
+    The depth and segmentation networks dominate E2's cost, so every script that needs the
+    targets for a dataset (E3 training, figures, benchmark) shares one cached copy.
+    """
+    path = Path(path)
+    if path.exists():
+        return torch.from_numpy(np.load(path)).float() / 255
+    with torch.no_grad():
+        targets = torch.cat(
+            [encoder.target(images[i : i + batch_size]) for i in range(0, len(images), batch_size)]
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(path, (targets * 255).round().to(torch.uint8).numpy())
+    return (targets * 255).round() / 255

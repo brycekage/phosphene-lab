@@ -6,6 +6,7 @@ import torch
 from phosphene_lab.encoders.base import (
     Encoder,
     fit_image_to_cloud,
+    image_to_field,
     sample_at_phosphenes,
 )
 from phosphene_lab.simulator.array import ElectrodeArray
@@ -104,6 +105,25 @@ def test_top_row_of_image_is_top_of_visual_field():
     values = sample_at_phosphenes(image, _cross_map(top=5.0))[0, 0]
     assert values[2] > 0  # phosphene at the top edge of the box
     assert values[3] == 0  # phosphene at the bottom edge
+
+
+# --- image_to_field -------------------------------------------------------------------
+
+
+def test_image_to_field_fills_the_box_and_nothing_else():
+    pmap = _cross_map()  # box spans x, y in [-5, 5] deg for a square image
+    field = image_to_field(torch.ones(1, 1, 16, 16), pmap, RenderConfig(resolution=40))
+    assert field.shape == (1, 1, 40, 40)
+    # 20 deg over 40 px: 0.5 deg per pixel, so the box covers the middle 20 x 20 pixels.
+    assert field[0, 0, 11:29, 11:29].min() == pytest.approx(1.0)
+    assert field[0, 0, :9].max() == 0 and field[0, 0, :, 31:].max() == 0
+
+
+def test_image_to_field_keeps_orientation():
+    image = torch.zeros(1, 1, 16, 16)
+    image[0, 0, :8, :8] = 1.0  # top-left quadrant
+    field = image_to_field(image, _cross_map(), RenderConfig(resolution=40))[0, 0]
+    assert field[12, 12] == pytest.approx(1.0) and field[27, 27] == 0.0
 
 
 # --- Encoder base ---------------------------------------------------------------------

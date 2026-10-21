@@ -92,6 +92,34 @@ def test_scene_encoder_runs_with_injected_models():
     assert stim.max() <= encoder.config.max_current_uA
 
 
+def test_encoding_precomputed_targets_matches_forward():
+    pmap = PhospheneMap.from_array(ElectrodeArray.grid(256))
+    encoder = SceneEncoder(models=_StubModels(), config=RenderConfig(max_active=40))
+    images = torch.zeros(2, 3, H, W)
+    torch.testing.assert_close(
+        encoder.encode_targets(encoder.target(images), pmap), encoder(images, pmap)
+    )
+
+
+def test_cached_targets_are_computed_once(tmp_path):
+    from phosphene_lab.encoders.scene import cached_targets
+
+    calls = []
+
+    class _Counting(_StubModels):
+        def __call__(self, images):
+            calls.append(len(images))
+            return super().__call__(images)
+
+    encoder = SceneEncoder(models=_Counting())
+    images = torch.zeros(5, 3, H, W)
+    first = cached_targets(encoder, images, tmp_path / "t.npy", batch_size=2)
+    second = cached_targets(encoder, images, tmp_path / "t.npy", batch_size=2)
+    assert first.shape == (5, 1, H, W)
+    assert calls == [2, 2, 1]  # batched on the first call, read from disk on the second
+    torch.testing.assert_close(first, second)
+
+
 @pytest.mark.slow
 def test_pretrained_models_produce_aligned_maps():
     from phosphene_lab.encoders.scene import PretrainedSceneModels
