@@ -11,10 +11,68 @@ uv run pytest
 uv run python scripts/render_reference.py --quick   # writes results/phase0_reference.png
 ```
 
+## Results so far (Phases 2-4)
+
+All numbers below come from files in `results/`, written by the scripts named. Accuracy is a
+virtual observer's (mean ± std over 3 seeds); "majority" is always guessing the most common
+test class.
+
+![Accuracy vs electrodes](results/benchmark_accuracy_vs_electrodes.png)
+
+**Benchmark** (`scripts/run_benchmark.py`, `results/benchmark_summary.csv`), 256 electrodes,
+no dead electrodes, default patients:
+
+| task (majority) | E0 naive | E1 edges | E2 scene | E3 learned |
+|---|---|---|---|---|
+| letters (0.054) | 0.51 ± 0.03 | 0.45 ± 0.02 | 0.54 ± 0.01 | **0.69 ± 0.00** |
+| objects (0.10) | 0.17 ± 0.04 | 0.15 ± 0.03 | **0.26 ± 0.02** | 0.23 ± 0.02 |
+| obstacles (0.353) | 0.35 ± 0.00 | 0.35 ± 0.00 | **0.58 ± 0.02** | 0.33 ± 0.06 |
+
+- E3 (learned) reads letters best at every array size and uses about 3x less total current than
+  E0, but it drives every electrode at a low level (some below threshold), so its "active
+  electrodes" count is not comparable to the others.
+- **E3 failed on obstacles:** training collapsed to almost no stimulation
+  (`results/phase2_e3_training.csv`, final mean current 0.0003 of max), so it sits at the
+  majority-class guess, as do E0 and E1. Only E2 carries obstacle information.
+- Accuracy changes little from 256 to 1600 electrodes, with 30% dead electrodes, or with patient
+  variability, in this setup (see the dropout and variability figures). Part of the reason is
+  the observer, which is retrained for every patient (see the calibration note below).
+- Objects stay hard for every encoder (best: E2 at 1600 electrodes, 0.32 ± 0.04).
+
+**Calibration** (`scripts/run_calibration.py`, `results/phase4_queries_to_target.csv`), 256
+electrodes; the target is the error that one full exhaustive pass (2048 queries, ~171 clinic
+minutes) reaches:
+
+| patients | error | active needs | random needs |
+|---|---|---|---|
+| correlated | location | 32 queries (~3 min) | not reached in 2048 |
+| correlated | threshold | 1088 queries (~91 min) | not reached in 2048 |
+| independent | location | 1984 queries (~165 min) | not reached in 2048 |
+| independent | threshold | 1248 queries (~104 min) | 1824 queries (~152 min) |
+
+The large location win depends on most of the error being shared across the array (the
+"correlated" assumption); when every electrode errs on its own, active calibration gains little
+on location.
+
+**Closing the loop** (`scripts/closed_loop.py`, `results/phase4_closed_loop_summary.csv`): task
+accuracy for E2 and E3 was the same, within noise, with the true map, the uncalibrated guess,
+and calibrated maps. SSIM to the intended picture did improve (E2 letters: 0.462 uncalibrated,
+0.517 after 100 queries, 0.533 with the true map; `results/phase4_closed_loop.csv`). The
+per-patient observer learns any consistent distortion, so this metric cannot show
+calibration's value; see [the Phase 4 note](docs/how-it-works/04-calibration.md).
+
+**Compute budget:** E3 trains in about 4-5 min per task on a laptop CPU, calibration takes
+under 2 min, and the closed loop about 12 min. The full benchmark took about 72 min of compute,
+over the 1-hour budget, even after shrinking the observer and the letter set; it runs as
+separate (task, seed) parts.
+
 ## How it works
 
 - [Phase 0: the reference simulators](docs/how-it-works/00-setup.md)
 - [Phase 1: the phosphene simulator](docs/how-it-works/01-simulator.md)
+- [Phase 2: encoders](docs/how-it-works/02-encoders.md)
+- [Phase 3: the benchmark](docs/how-it-works/03-benchmark.md)
+- [Phase 4: fast calibration](docs/how-it-works/04-calibration.md)
 
 ## Assumptions
 
@@ -50,6 +108,44 @@ Every simplification in the simulator, in one sentence each:
   patient data.
 - **Patient responses:** "did you see it?" answers follow a cumulative-normal curve with random
   lapses, and pointing answers add round Gaussian noise; real patients also show biases.
+
+Encoders and tasks (Phase 2):
+
+- **Image placement:** every encoder stretches the camera image over the smallest box that
+  contains the patient's working phosphenes, so the whole image lands where the implant can
+  draw; the uncovered meridian strip still cuts through the middle of a centered letter.
+- **Fixed pulse amplitude:** E0 and E1 switch electrodes between off and a fixed 60 uA, and E2
+  scales up to 60 uA, rather than tuning current to each electrode's threshold.
+- **Scene networks:** E2 uses Depth Anything V2 Small (relative depth, so "near" means near for
+  that image) and SegFormer-B0 trained on ADE20K photos, both run at reduced resolution on CPU.
+- **Obstacle labels:** an NYU frame's label is the left, center, or right third whose lower
+  two thirds are at least 15% nearer than 1.5 m (the most blocked third wins), otherwise
+  "none"; this is a rule on the depth map, not a human annotation.
+- **Object subset:** the object task is 10 COCO categories that are most often the largest
+  object in a val2017 image, 70 images each, cropped to that object, so it is small and easier
+  than full scene recognition.
+- **Learned encoder inputs:** E3 shrinks images so the long side is at most 48 px, and it is
+  trained only on 256- and 1024-electrode grids with default patients.
+
+Evaluation (Phase 3):
+
+- **Virtual observer:** task accuracy comes from a small CNN trained on each encoder's percepts,
+  which measures how much task information survives but not how a person would learn to read
+  phosphenes.
+- **Charge proxy:** "total current per frame" sums the currents of active electrodes and stands
+  in for charge, assuming every electrode fires the same pulse train.
+- **Known map during benchmarking:** Phase 3 encoders use each patient's true phosphene map, as
+  if calibration were perfect; Phase 4 removes that assumption.
+
+Calibration (Phase 4):
+
+- **Population knowledge:** calibration knows the population's psychometric slope, lapse rate,
+  pointing noise, and how much patients vary, but nothing about the specific patient.
+- **Query cost:** every query is one stimulation plus a pointing answer ("nothing" counts as an
+  answer) and is assumed to take 5 s of clinic time.
+- **Correlated deviations:** the Phase 4 patients deviate from the plan mostly through how the
+  whole array landed (a shift and a small rotation per hemisphere) and a smooth excitability
+  field over cortex; the sizes of these effects are plausible guesses, not measurements.
 
 ## Acknowledgements
 

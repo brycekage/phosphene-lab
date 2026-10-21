@@ -1,0 +1,41 @@
+# Phase 4 closing the loop: does calibration change what the patient can actually do?
+seed: 0
+seeds: [0, 1, 2]
+patient_seed_offset: 800000
+n_electrodes: 256
+patient_model:                 # same "correlated" population as phase4_calibration.yaml
+  location_jitter_mm: 0.3
+  placement_offset_mm: 1.5
+  placement_rotation_deg: 5.0
+  threshold_log_sd: 0.2
+  threshold_field_sd: 0.35
+calibration_queries: [100, 300, 1000]
+data_root: data
+checkpoint_dir: checkpoints
+tasks: [letters, objects, obstacles]
+encoders: [E2, E3]
+limits:
+  letters: {train: 1300, test: 520}
+  objects: {train: null, test: null}
+  obstacles: {train: null, test: null}
+observer_epochs: 6               # same observer settings as configs/benchmark.yaml
+observer_width: 16
+render:
+  resolution: 32
+  field_deg: 20.0
+  max_current_uA: 100.0
+
+output_csv: results/phase4_closed_loop.csv
+summary_csv: results/phase4_closed_loop_summary.csv
+
+quick:
+  seeds: [0]
+  n_electrodes: 64
+  calibration_queries: [100]
+  tasks: [letters]
+  checkpoint_dir: checkpoints/quick
+  limits:
+    letters: {train: 200, test: 100}
+  observer_epochs: 2
+  output_csv: results/quick/phase4_closed_loop.csv
+  summary_csv: results/quick/phase4_closed_loop_summary.csv

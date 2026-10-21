@@ -1,0 +1,13 @@
+patient_model,metric,method,target,queries_needed,clinic_minutes
+correlated,location_error_deg,exhaustive,0.2258,2048.0,170.7
+correlated,location_error_deg,random,0.2258,nan,nan
+correlated,location_error_deg,active,0.2258,32.0,2.7
+correlated,threshold_error_uA,exhaustive,1.9109,2048.0,170.7
+correlated,threshold_error_uA,random,1.9109,nan,nan
+correlated,threshold_error_uA,active,1.9109,1088.0,90.7
+independent,location_error_deg,exhaustive,0.1864,2048.0,170.7
+independent,location_error_deg,random,0.1864,nan,nan
+independent,location_error_deg,active,0.1864,1984.0,165.3
+independent,threshold_error_uA,exhaustive,2.1664,2048.0,170.7
+independent,threshold_error_uA,random,2.1664,1824.0,152.0
+independent,threshold_error_uA,active,2.1664,1248.0,104.0

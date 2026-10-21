@@ -37,6 +37,12 @@ class PatientParams:
     pointing_noise_deg: float = 0.5  # SD of each coordinate of a pointing response
     lapse_rate: float = 0.05  # probability that a response is a random guess
     psychometric_slope_uA: float = 3.0  # SD of the cumulative-normal detection curve
+    # Spatially correlated deviations (all off by default; Phase 4 turns them on). They are
+    # drawn from a separate random stream so turning them on leaves the other draws unchanged.
+    placement_offset_mm: float = 0.0  # SD of a rigid shift of each hemisphere's array
+    placement_rotation_deg: float = 0.0  # SD of a rotation of each array about its center
+    threshold_field_sd: float = 0.0  # SD of a smooth log-threshold field over cortex
+    threshold_field_length_mm: float = 3.0  # correlation length of that field
 
 
 DEFAULT_PATIENT = PatientParams()
@@ -55,14 +61,16 @@ class VirtualPatient:
         self.n_queries = 0
 
         g = torch.Generator().manual_seed(seed)
+        g_corr = torch.Generator().manual_seed(seed + 2_000_003)
         n = self.n_electrodes
+        cx, cy = _place(array, params, g_corr)
         jx = torch.randn(n, generator=g) * params.location_jitter_mm
         jy = torch.randn(n, generator=g) * params.location_jitter_mm
-        x_deg, y_deg = cortex_to_visual_field(
-            array.cortex_x_mm + jx, array.cortex_y_mm + jy, array.hemisphere, retinotopy
-        )
+        cx, cy = cx + jx, cy + jy
+        x_deg, y_deg = cortex_to_visual_field(cx, cy, array.hemisphere, retinotopy)
+        log_field = _smooth_field(cx, cy, array.hemisphere, params, g_corr)
         thresholds = params.threshold_median_uA * torch.exp(
-            params.threshold_log_sd * torch.randn(n, generator=g)
+            params.threshold_log_sd * torch.randn(n, generator=g) + log_field
         )
         size_scale = torch.exp(params.size_scale_log_sd * torch.randn(n, generator=g))
         alive = torch.rand(n, generator=g) >= params.dropout_rate
@@ -108,3 +116,40 @@ class VirtualPatient:
     def _sees(self, electrode: int, current_uA: float) -> bool:
         u = torch.rand(1, generator=self._response_rng).item()
         return u < self.detection_probability(electrode, current_uA)
+
+
+def _place(
+    array: ElectrodeArray, params: PatientParams, g: torch.Generator
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Planned cortical positions after a rigid placement error (shift + rotation) per array."""
+    x, y = array.cortex_x_mm.clone(), array.cortex_y_mm.clone()
+    for h in (1, -1):
+        side = array.hemisphere == h
+        shift = torch.randn(2, generator=g) * params.placement_offset_mm
+        angle = torch.deg2rad(torch.randn(1, generator=g) * params.placement_rotation_deg)
+        if not side.any():
+            continue
+        x0, y0 = x[side].mean(), y[side].mean()
+        dx, dy = x[side] - x0, y[side] - y0
+        cos, sin = torch.cos(angle), torch.sin(angle)
+        x[side] = x0 + cos * dx - sin * dy + shift[0]
+        y[side] = y0 + sin * dx + cos * dy + shift[1]
+    return x, y
+
+
+def _smooth_field(
+    x: torch.Tensor, y: torch.Tensor, hemisphere: torch.Tensor, params: PatientParams,
+    g: torch.Generator, n_features: int = 256,
+) -> torch.Tensor:  # fmt: skip
+    """A smooth random field over cortex (squared-exponential covariance, via random
+    Fourier features), drawn independently for each hemisphere. Zero when the SD is 0."""
+    field = torch.zeros_like(x)
+    for h in (1, -1):
+        w = torch.randn(n_features, 2, generator=g) / params.threshold_field_length_mm
+        b = torch.rand(n_features, generator=g) * 2 * torch.pi
+        a = torch.randn(n_features, generator=g)
+        side = hemisphere == h
+        pos = torch.stack([x[side], y[side]], dim=1)
+        features = torch.cos(pos @ w.T + b) * (2 / n_features) ** 0.5
+        field[side] = params.threshold_field_sd * (features @ a)
+    return field

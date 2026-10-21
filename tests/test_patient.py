@@ -6,6 +6,7 @@ import torch
 from phosphene_lab.simulator.array import ElectrodeArray
 from phosphene_lab.simulator.patient import PatientParams, VirtualPatient
 from phosphene_lab.simulator.phosphene import PhospheneMap
+from phosphene_lab.simulator.retinotopy import visual_field_to_cortex
 
 ARRAY = ElectrodeArray.grid(1600)
 
@@ -107,3 +108,53 @@ def test_query_counter_and_reproducible_responses():
     n, a = run(9)
     assert n == 21
     assert run(9)[1] == a
+
+
+# --- spatially correlated deviations (used by Phase 4 calibration) --------------------
+
+
+def _cortex_residual(patient):
+    """True cortical position (recovered through retinotopy) minus the planned one."""
+    truth = patient.true_phosphene_map()
+    x_mm, y_mm, _ = visual_field_to_cortex(truth.x_deg, truth.y_deg)
+    return x_mm - ARRAY.cortex_x_mm, y_mm - ARRAY.cortex_y_mm
+
+
+def test_placement_offset_shifts_each_hemisphere_rigidly():
+    params = PatientParams(location_jitter_mm=0.0, placement_offset_mm=1.5)
+    dx, dy = _cortex_residual(VirtualPatient(ARRAY, params, seed=3))
+    for h in (1, -1):
+        side = ARRAY.hemisphere == h
+        assert dx[side].std() < 1e-3 and dy[side].std() < 1e-3  # one shift per hemisphere
+    assert torch.hypot(dx, dy).mean() > 0.1
+
+
+def test_placement_rotation_turns_the_array():
+    params = PatientParams(location_jitter_mm=0.0, placement_rotation_deg=10.0)
+    dx, dy = _cortex_residual(VirtualPatient(ARRAY, params, seed=3))
+    side = ARRAY.hemisphere == 1
+    assert dx[side].std() > 0.05  # not a pure translation
+    assert dx[side].mean().abs() < 0.05  # rotation is about the array's own center
+
+
+def test_threshold_field_is_spatially_smooth():
+    params = PatientParams(threshold_log_sd=0.0, threshold_field_sd=0.5, location_jitter_mm=0.0)
+    log_t = VirtualPatient(ARRAY, params, seed=0).true_phosphene_map().threshold_uA.log()
+    side = ARRAY.hemisphere == 1
+    x, y, v = ARRAY.cortex_x_mm[side], ARRAY.cortex_y_mm[side], log_t[side] - log_t[side].mean()
+    dist = torch.cdist(torch.stack([x, y], 1), torch.stack([x, y], 1))
+    near = (dist > 0) & (dist < 1.2)  # grid spacing is ~0.8 mm
+    far = dist > 8.0
+    corr = torch.outer(v, v) / v.var()
+    assert corr[near].mean() > 0.5
+    assert corr[near].mean() > corr[far].mean() + 0.3
+
+
+def test_correlated_terms_leave_the_default_draws_untouched():
+    base = VirtualPatient(ARRAY, seed=5).true_phosphene_map()
+    extra = VirtualPatient(
+        ARRAY, PatientParams(placement_offset_mm=1.0, placement_rotation_deg=5.0), seed=5
+    ).true_phosphene_map()
+    assert torch.equal(base.threshold_uA, extra.threshold_uA)
+    assert torch.equal(base.alive, extra.alive)
+    assert torch.equal(base.size_scale, extra.size_scale)
