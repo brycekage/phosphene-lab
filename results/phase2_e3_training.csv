@@ -1,4 +1,4 @@
-task,n_train,steps,seconds,seconds_per_step,final_recon,final_task_ce,final_power
-letters,26000,1500,282.5,0.188,0.1211,0.8726,0.0694
-objects,560,1500,223.3,0.149,0.1518,1.6253,0.036
-obstacles,1160,1500,232.6,0.155,0.0315,1.2914,0.0003
+task,n_train,steps,seconds,seconds_per_step,final_recon,final_task_ce,final_power,power_weight
+letters,26000,1500,282.5,0.188,0.1211,0.8726,0.0694,0.05
+objects,560,1500,223.3,0.149,0.1518,1.6253,0.036,0.05
+obstacles,1160,1500,392.2,0.261,0.0315,1.2914,0.0003,0.05

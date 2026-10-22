@@ -22,3 +22,11 @@ def load_config(path: str | Path, quick: bool = False) -> dict:
             else:
                 cfg[key] = override
     return cfg
+
+
+def with_overrides(base: dict, overrides: dict | None, name: str) -> dict:
+    """``base`` updated with ``overrides[name]`` (if any), without mutating ``base``.
+
+    Used for per-task settings, e.g. ``task_overrides: {obstacles: {power_weight: 0.005}}``.
+    """
+    return {**base, **((overrides or {}).get(name) or {})}

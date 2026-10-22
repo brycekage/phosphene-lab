@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
-from phosphene_lab.config import load_config  # noqa: E402
+from phosphene_lab.config import load_config, with_overrides  # noqa: E402
 from phosphene_lab.encoders.learned import E3TrainConfig, train_learned_encoder  # noqa: E402
 from phosphene_lab.eval.tasks import TASKS, load_task  # noqa: E402
 from phosphene_lab.simulator.phosphene import RenderConfig  # noqa: E402
@@ -39,15 +39,16 @@ def main() -> None:
     torch.manual_seed(cfg["seed"])
     torch.set_num_threads(cfg.get("num_threads", torch.get_num_threads()))
 
-    train = dict(cfg["train"])
-    train["electrode_counts"] = tuple(train["electrode_counts"])
-    train_cfg = E3TrainConfig(**train, render=RenderConfig(**cfg["render"]), seed=cfg["seed"])
+    base = dict(cfg["train"])
+    base["electrode_counts"] = tuple(base["electrode_counts"])
     ckpt_dir = Path(cfg["checkpoint_dir"])
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
     for name in cfg["tasks"]:
         task = TASKS[name]
+        train = with_overrides(base, cfg.get("task_overrides"), name)
+        train_cfg = E3TrainConfig(**train, render=RenderConfig(**cfg["render"]), seed=cfg["seed"])
         images, labels, targets = load_task(task, "train", cfg["data_root"], cfg["train_limit"])
         start = time.perf_counter()
         encoder, observer, history = train_learned_encoder(
@@ -65,6 +66,7 @@ def main() -> None:
             [name, len(labels), train_cfg.steps, round(seconds, 1),
              round(seconds / train_cfg.steps, 3)]
             + [round(float(np.mean([h[k] for h in tail])), 4) for k in ("recon", "task", "power")]
+            + [train_cfg.power_weight]
         )  # fmt: skip
         print(f"{name}: {seconds:.0f} s, final recon {rows[-1][5]}, task {rows[-1][6]}")
 
@@ -74,6 +76,8 @@ def main() -> None:
     if out_csv.exists():
         with out_csv.open(newline="") as fh:
             kept = [r for r in list(csv.reader(fh))[1:] if r[0] not in cfg["tasks"]]
+        # Rows written before the power_weight column existed used the base setting.
+        kept = [r if len(r) == 9 else [*r, base["power_weight"]] for r in kept]
         rows = kept + rows
     curves = {
         name: torch.load(ckpt_dir / f"e3_{name}.pt", weights_only=True)["history"]
@@ -85,7 +89,7 @@ def main() -> None:
         writer = csv.writer(fh)
         writer.writerow(
             ["task", "n_train", "steps", "seconds", "seconds_per_step",
-             "final_recon", "final_task_ce", "final_power"]
+             "final_recon", "final_task_ce", "final_power", "power_weight"]
         )  # fmt: skip
         writer.writerows(rows)
 
