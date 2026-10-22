@@ -6,7 +6,12 @@ import pytest
 import torch
 
 from phosphene_lab.encoders.naive import NaiveEncoder
-from phosphene_lab.eval.benchmark import TaskData, evaluate_cell, make_patient
+from phosphene_lab.eval.benchmark import (
+    TaskData,
+    evaluate_cell,
+    make_patient,
+    score_with_observer,
+)
 from phosphene_lab.simulator.phosphene import RenderConfig
 
 
@@ -65,3 +70,23 @@ def test_cell_accepts_a_wrong_encoder_map():
         _toy_data(), NaiveEncoder(), patient, RenderConfig(resolution=32), 2, encoder_map=wrong
     )
     assert bad["ssim"] < good["ssim"]
+
+
+def test_fixed_observer_is_hurt_by_a_wrong_map_but_an_adaptive_one_is_not():
+    patient = make_patient(256, 0.0, "default", seed=0)
+    truth = patient.true_phosphene_map()
+    # A left-right mirrored belief shows every image flipped: a consistent, learnable error.
+    wrong = dataclasses.replace(truth, x_deg=-truth.x_deg)
+    data, render = _toy_data(), RenderConfig(resolution=32)
+
+    _, observer = evaluate_cell(
+        data, NaiveEncoder(), patient, render, observer_epochs=6, return_observer=True
+    )
+    fixed_true = score_with_observer(observer, data, NaiveEncoder(), patient, render, truth)
+    fixed_wrong = score_with_observer(observer, data, NaiveEncoder(), patient, render, wrong)
+    adaptive_wrong = evaluate_cell(
+        data, NaiveEncoder(), patient, render, observer_epochs=6, encoder_map=wrong
+    )["accuracy"]
+    assert fixed_true > 0.9
+    assert fixed_wrong < 0.2  # the unadapted reader reads left bars as right bars
+    assert adaptive_wrong > 0.9  # a reader trained on the flipped percepts recovers

@@ -21,7 +21,7 @@ from phosphene_lab.encoders.learned import load_e3
 from phosphene_lab.encoders.naive import NaiveEncoder
 from phosphene_lab.encoders.scene import SceneEncoder
 from phosphene_lab.eval.metrics import mean_ssim, stimulation_stats
-from phosphene_lab.eval.observer import accuracy, train_observer
+from phosphene_lab.eval.observer import Observer, accuracy, train_observer
 from phosphene_lab.eval.tasks import TASKS, load_task
 from phosphene_lab.simulator.array import ElectrodeArray
 from phosphene_lab.simulator.patient import PatientParams, VirtualPatient
@@ -105,7 +105,9 @@ def evaluate_cell(
     seed: int = 0,
     encoder_map: PhospheneMap | None = None,
     observer_width: int = 32,
-) -> dict[str, float]:
+    return_observer: bool = False,
+):
+    """Metrics for one cell; with ``return_observer``, also the trained observer."""
     true_map = patient.true_phosphene_map()
     belief = true_map if encoder_map is None else encoder_map
     renderer = PhospheneRenderer(true_map, render)
@@ -121,8 +123,27 @@ def evaluate_cell(
     )  # fmt: skip
     # The goal image sits where a perfectly calibrated system would put it.
     goal = image_to_field(data.test_targets, true_map, render)[:, 0]
-    return {
+    metrics = {
         "accuracy": accuracy(observer, test_percepts, data.test_labels),
         "ssim": mean_ssim(test_percepts, goal),
         **stimulation_stats(test_stim),
     }
+    return (metrics, observer) if return_observer else metrics
+
+
+def score_with_observer(
+    observer: Observer,
+    data: TaskData,
+    encoder: Encoder,
+    patient: VirtualPatient,
+    render: RenderConfig,
+    encoder_map: PhospheneMap,
+) -> float:
+    """Test accuracy of an already-trained observer on percepts made with ``encoder_map``.
+
+    With an observer trained on true-map percepts, this models a patient who learned to read
+    the implant under a correct map and has not adapted to the errors of a new one.
+    """
+    renderer = PhospheneRenderer(patient.true_phosphene_map(), render)
+    stim = encode(encoder, data.test_images, data.test_targets, encoder_map)
+    return accuracy(observer, render_all(renderer, stim), data.test_labels)

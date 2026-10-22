@@ -22,7 +22,12 @@ import torch
 from phosphene_lab.calibration.active import ActiveCalibrator
 from phosphene_lab.calibration.common import SECONDS_PER_QUERY, CalibrationConfig, map_errors
 from phosphene_lab.config import load_config
-from phosphene_lab.eval.benchmark import build_encoders, evaluate_cell, load_task_data
+from phosphene_lab.eval.benchmark import (
+    build_encoders,
+    evaluate_cell,
+    load_task_data,
+    score_with_observer,
+)
 from phosphene_lab.eval.tasks import TASKS
 from phosphene_lab.simulator.array import ElectrodeArray
 from phosphene_lab.simulator.patient import PatientParams, VirtualPatient
@@ -61,21 +66,32 @@ def main() -> None:
             cfg["encoders"], TASKS[task_name].mode, task_name, render, cfg["checkpoint_dir"]
         )
         for seed in cfg["seeds"]:
-            truth = patients[seed].true_phosphene_map()
-            for map_name, belief in beliefs[seed].items():
-                errors = map_errors(belief, truth)
-                for enc_name, encoder in encoders.items():
-                    result = evaluate_cell(
-                        data, encoder, patients[seed], render, cfg["observer_epochs"], seed,
+            patient = patients[seed]
+            truth = patient.true_phosphene_map()
+            for enc_name, encoder in encoders.items():
+                # "accuracy": an observer retrained on this map's percepts (fully adapted).
+                # "fixed_accuracy": the observer trained under the true map, reading this
+                # map's percepts (not adapted). The "true" map comes first in `beliefs`.
+                fixed_observer = None
+                for map_name, belief in beliefs[seed].items():
+                    result, observer = evaluate_cell(
+                        data, encoder, patient, render, cfg["observer_epochs"], seed,
                         encoder_map=belief, observer_width=cfg["observer_width"],
+                        return_observer=True,
                     )  # fmt: skip
+                    if map_name == "true":
+                        fixed_observer = observer
+                    fixed = score_with_observer(
+                        fixed_observer, data, encoder, patient, render, belief
+                    )
                     queries = int(map_name.split("_")[1]) if map_name.startswith("active") else 0
                     rows.append(
                         {"task": task_name, "encoder": enc_name, "map": map_name, "seed": seed,
                          "queries": queries,
                          "clinic_minutes": round(queries * SECONDS_PER_QUERY / 60, 1)}
                         | {k: round(v, 4) for k, v in result.items()}
-                        | {k: round(v, 4) for k, v in errors.items()}
+                        | {"fixed_accuracy": round(fixed, 4)}
+                        | {k: round(v, 4) for k, v in map_errors(belief, truth).items()}
                     )  # fmt: skip
             print(f"{task_name} seed {seed}: {time.perf_counter() - start:.0f} s elapsed")
 
@@ -86,19 +102,19 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
 
-    groups: dict[tuple, list[float]] = {}  # insertion order: task, seed, map, encoder
+    groups: dict[tuple, list[dict]] = {}  # insertion order keeps the map order
     for r in rows:
-        groups.setdefault((r["task"], r["encoder"], r["map"]), []).append(r["accuracy"])
+        groups.setdefault((r["task"], r["encoder"], r["map"]), []).append(r)
     summary = []
-    for (task_name, enc_name, map_name), values in sorted(
+    for (task_name, enc_name, map_name), members in sorted(
         groups.items(), key=lambda kv: (kv[0][0], kv[0][1])
     ):
-        acc = np.array(values)
-        summary.append(
-            {"task": task_name, "encoder": enc_name, "map": map_name, "n_seeds": len(acc),
-             "accuracy_mean": round(float(acc.mean()), 4),
-             "accuracy_std": round(float(acc.std(ddof=1)) if len(acc) > 1 else 0.0, 4)}
-        )  # fmt: skip
+        entry = {"task": task_name, "encoder": enc_name, "map": map_name, "n_seeds": len(members)}
+        for key in ("accuracy", "fixed_accuracy"):
+            v = np.array([m[key] for m in members])
+            entry[f"{key}_mean"] = round(float(v.mean()), 4)
+            entry[f"{key}_std"] = round(float(v.std(ddof=1)) if len(v) > 1 else 0.0, 4)
+        summary.append(entry)
     with Path(cfg["summary_csv"]).open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(summary[0]))
         writer.writeheader()
