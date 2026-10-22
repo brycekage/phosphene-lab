@@ -39,6 +39,7 @@ class CalibrationConfig:
     queries_per_electrode: int = 8  # baseline protocol: total queries per electrode
     candidate_step_uA: float = 5.0  # active method: currents it may choose from
     prior_refresh_every: int = 10  # active method: share threshold evidence every k queries
+    fit_location_every: int = 0  # active method: refit the location prior every k (0 = never)
 
     @classmethod
     def from_population(cls, params: PatientParams, array_radius_mm: float = 8.0, **kw):

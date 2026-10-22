@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import dataclasses
 import time
 from pathlib import Path
 
@@ -41,6 +42,7 @@ CALIBRATORS = {
     "exhaustive": SequentialCalibrator,
     "random": RandomCalibrator,
     "active": ActiveCalibrator,
+    "active_fit": ActiveCalibrator,  # also refits its location prior to this patient
 }
 ERRORS = ("location_error_deg", "threshold_error_uA")
 
@@ -64,12 +66,21 @@ def main() -> None:
     rows = []
     start = time.perf_counter()
     for model_name, overrides in cfg["patient_models"].items():
+        overrides = dict(overrides)
+        # "assumed": the population the calibrator believes in, when it differs from the truth.
+        assumed = overrides.pop("assumed", None)
         params = PatientParams(**overrides)
-        calib_cfg = CalibrationConfig.from_population(params)
+        calib_cfg = CalibrationConfig.from_population(
+            params if assumed is None else PatientParams(**assumed)
+        )
+        fit_cfg = dataclasses.replace(
+            calib_cfg, fit_location_every=cfg.get("fit_location_every", 50)
+        )
         for seed in cfg["seeds"]:
             for method in cfg["methods"]:
                 patient = VirtualPatient(array, params, seed=cfg["patient_seed_offset"] + seed)
-                snapshots = CALIBRATORS[method](array, calib_cfg, seed=seed).run(
+                method_cfg = fit_cfg if method == "active_fit" else calib_cfg
+                snapshots = CALIBRATORS[method](array, method_cfg, seed=seed).run(
                     patient, checkpoints
                 )
                 truth = patient.true_phosphene_map()  # evaluation only, after calibration

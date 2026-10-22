@@ -130,6 +130,59 @@ def test_reports_shrink_posterior_variance():
     assert torch.all(after <= before + 1e-9)
 
 
+def _wrong_prior(array, offset_sd_mm, jitter_sd_mm):
+    return LocationModel(array, PARAMS, share=True, offset_sd_mm=offset_sd_mm,
+                         smooth_sd_mm=0.05, length_mm=5.0, jitter_sd_mm=jitter_sd_mm)  # fmt: skip
+
+
+def _add_displaced(model, array, electrodes, dx, dy):
+    x, y = cortex_to_visual_field(
+        array.cortex_x_mm[electrodes] + dx, array.cortex_y_mm[electrodes] + dy,
+        array.hemisphere[electrodes],
+    )  # fmt: skip
+    for e, xi, yi in zip(electrodes.tolist(), x.tolist(), y.tolist(), strict=True):
+        model.add_report(e, xi, yi)
+
+
+def test_fitting_recovers_a_large_per_electrode_jitter():
+    array = ElectrodeArray.grid(256)
+    g = torch.Generator().manual_seed(0)
+    seen = torch.arange(0, 256, 2)
+    model = _wrong_prior(array, offset_sd_mm=0.05, jitter_sd_mm=0.05)
+    dx, dy = torch.randn(128, generator=g), torch.randn(128, generator=g)
+    noise_sd = model.noise_var_mm2[seen].sqrt()  # pointing noise (~2 mm), as the model assumes
+    for _ in range(8):  # one exhaustive pass of reports per electrode
+        _add_displaced(
+            model, array, seen, dx + noise_sd * torch.randn(128, generator=g),
+            dy + noise_sd * torch.randn(128, generator=g),
+        )  # fmt: skip
+    fitted = model.fit_hyperparameters()
+    assert 0.7 < fitted["jitter_sd_mm"] < 1.4  # truth 1.0, prior said 0.05
+
+
+def test_fitting_lets_a_common_offset_reach_unvisited_electrodes():
+    array = ElectrodeArray.grid(256)
+    right = torch.nonzero(array.hemisphere == 1)[:, 0]
+    visited, unvisited = right[::4], right[1::4]
+    model = _wrong_prior(array, offset_sd_mm=0.05, jitter_sd_mm=1.0)  # prior: no shared shift
+    _add_displaced(model, array, visited, 1.5, -1.0)
+    before = model.residual_mm()[0][unvisited].mean().item()
+    model.fit_hyperparameters()
+    dx, dy = model.residual_mm()
+    assert before < 0.3  # the wrong prior keeps unvisited electrodes near the plan
+    assert dx[unvisited].mean() == pytest.approx(1.5, abs=0.3)
+    assert dy[unvisited].mean() == pytest.approx(-1.0, abs=0.3)
+
+
+def test_fitting_needs_enough_electrodes():
+    array = ElectrodeArray.grid(64)
+    model = _wrong_prior(array, offset_sd_mm=0.05, jitter_sd_mm=0.05)
+    _add_displaced(model, array, torch.arange(5), 2.0, 0.0)
+    k_before = model.K.clone()
+    assert model.fit_hyperparameters(min_electrodes=10) is None
+    assert torch.equal(model.K, k_before)
+
+
 def test_estimated_map_is_in_degrees_and_matches_reports():
     array = ElectrodeArray.grid(64)
     model = _model(array, False)

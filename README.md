@@ -65,6 +65,16 @@ queries active calibration needs to match a full exhaustive pass on location fal
 and 0.95; for thresholds they fall from 1248 to 864. Sharing pays off once about half of the
 error is common to the array.
 
+**What if the population guess is wrong?** (`configs/phase4_fit_prior.yaml`,
+`results/phase4_fit_prior_queries_to_target.csv`): the same correlated patients, but the
+calibrator assumes the Phase 1-3 population with no shared placement error. Plain active
+calibration then needs 1792 queries (~149 min) to match a full exhaustive pass on location.
+Refitting the location prior's hyperparameters to the patient's own reports every 50 queries
+("active_fit") brings that back to 64 queries (~5 min), against 32 with the right prior. With
+the right prior, refitting changes nothing that matters (32 queries either way; thresholds
+1024 vs 1088). Location error after 256 queries, wrong prior: 0.40 ± 0.17 deg without
+refitting, 0.15 ± 0.01 deg with it.
+
 **Closing the loop** (`scripts/closed_loop.py`, `results/phase4_closed_loop_summary.csv`):
 
 - With an observer retrained for each map (a fully adapted patient), task accuracy was the
@@ -80,8 +90,8 @@ error is common to the array.
 
 See [the Phase 4 note](docs/how-it-works/04-calibration.md).
 
-**Compute budget:** E3 trains in about 4-5 min per task on a laptop CPU, calibration takes
-under 2 min, and the closed loop about 12 min. The full benchmark took about 72 min of compute,
+**Compute budget:** E3 trains in about 4-7 min per task on a laptop CPU, calibration takes
+under 2 min (about 3 min for the refitting comparison), and the closed loop about 12 min. The full benchmark took about 72 min of compute,
 over the 1-hour budget, even after shrinking the observer and the letter set; it runs as
 separate (task, seed) parts.
 
@@ -145,6 +155,8 @@ Encoders and tasks (Phase 2):
   than full scene recognition.
 - **Learned encoder inputs:** E3 shrinks images so the long side is at most 48 px, and it is
   trained only on 256- and 1024-electrode grids with default patients.
+- **E3 obstacle loss:** for navigation only, E3's picture-matching error weights lit and dark
+  target pixels equally, because plain error on mostly black targets taught it to draw nothing.
 
 Evaluation (Phase 3):
 
@@ -165,6 +177,10 @@ Calibration (Phase 4):
 - **Correlated deviations:** the Phase 4 patients deviate from the plan mostly through how the
   whole array landed (a shift and a small rotation per hemisphere) and a smooth excitability
   field over cortex; the sizes of these effects are plausible guesses, not measurements.
+- **Refitting the location prior:** "active_fit" re-estimates only the location model's four
+  spreads (shift, smooth field, its length scale, per-electrode jitter) under a weak prior
+  centered on 1 mm (5 mm for the length scale); the threshold model's population values stay
+  fixed.
 
 ## Acknowledgements
 

@@ -78,6 +78,25 @@ def test_active_beats_random_order_when_errors_are_correlated():
     assert results["ActiveCalibrator"] < results["RandomCalibrator"]
 
 
+@pytest.mark.slow
+def test_refitting_the_location_prior_rescues_a_wrong_population_guess():
+    # The calibrator assumes the Phase 1-3 population (no shared placement error); the
+    # patient has a large shared offset. Refitting the GP hyperparameters should find it.
+    wrong = CalibrationConfig.from_population(PatientParams())
+    errs = {}
+    for every in (0, 50):
+        cfg = dataclasses.replace(wrong, fit_location_every=every)
+        errs[every] = []
+        for seed in range(2):
+            patient = _patient(seed=seed)
+            calibrator = ActiveCalibrator(patient_array(patient), cfg, seed=seed)
+            ((_, estimate),) = calibrator.run(patient, checkpoints=[200])
+            errs[every].append(map_errors(estimate, patient.true_phosphene_map()))
+    fixed = sum(e["location_error_deg"] for e in errs[0])
+    fitted = sum(e["location_error_deg"] for e in errs[50])
+    assert fitted < 0.8 * fixed
+
+
 def test_map_errors_on_a_known_pair():
     truth = PhospheneMap(
         x_deg=torch.tensor([1.0, 2.0, 3.0]),

@@ -1,0 +1,13 @@
+patient_model,metric,method,target,queries_needed,clinic_minutes
+correlated_right_prior,location_error_deg,exhaustive,0.2258,2048.0,170.7
+correlated_right_prior,location_error_deg,active,0.2258,32.0,2.7
+correlated_right_prior,location_error_deg,active_fit,0.2258,32.0,2.7
+correlated_right_prior,threshold_error_uA,exhaustive,1.9109,2048.0,170.7
+correlated_right_prior,threshold_error_uA,active,1.9109,1088.0,90.7
+correlated_right_prior,threshold_error_uA,active_fit,1.9109,1024.0,85.3
+correlated_wrong_prior,location_error_deg,exhaustive,0.2512,2048.0,170.7
+correlated_wrong_prior,location_error_deg,active,0.2512,1792.0,149.3
+correlated_wrong_prior,location_error_deg,active_fit,0.2512,64.0,5.3
+correlated_wrong_prior,threshold_error_uA,exhaustive,1.9126,2048.0,170.7
+correlated_wrong_prior,threshold_error_uA,active,1.9126,1408.0,117.3
+correlated_wrong_prior,threshold_error_uA,active_fit,1.9126,1280.0,106.7

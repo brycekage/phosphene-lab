@@ -128,6 +128,14 @@ class ThresholdGrid:
         return mean, var.clamp(min=1e-6).sqrt()
 
 
+_HYPER_NAMES = ("offset_sd_mm", "smooth_sd_mm", "length_mm", "jitter_sd_mm")
+# Weak prior for fitting: SDs around 1 mm and the length scale around 5 mm, each within a
+# factor of ~e^1.5 (one SD in log space), and every value kept in [0.01, 20] mm.
+_PRIOR_LOG_MEAN = torch.tensor([0.0, 0.0, math.log(5.0), 0.0])
+_PRIOR_LOG_SD = torch.tensor([1.5, 1.5, 1.0, 1.5])
+_LOG_MIN, _LOG_MAX = math.log(0.01), math.log(20.0)
+
+
 def _binary_entropy(p: Tensor) -> Tensor:
     p = p.clamp(1e-9, 1 - 1e-9)
     return -(p * p.log() + (1 - p) * (1 - p).log())
@@ -148,16 +156,16 @@ class LocationModel:
         self.x0, self.y0 = array.cortex_x_mm, array.cortex_y_mm
         self.hemisphere = array.hemisphere
         self.retinotopy = retinotopy
+        self.share = share
         n = len(array)
-        if share:
-            same = (self.hemisphere[:, None] == self.hemisphere[None]).float()
-            pos = torch.stack([self.x0, self.y0], dim=1)
-            rbf = torch.exp(-(torch.cdist(pos, pos) ** 2) / (2 * length_mm**2))
-            self.K = same * (offset_sd_mm**2 + smooth_sd_mm**2 * rbf)
-            self.K += jitter_sd_mm**2 * torch.eye(n)
-        else:
-            total = offset_sd_mm**2 + smooth_sd_mm**2 + jitter_sd_mm**2
-            self.K = total * torch.eye(n)
+        pos = torch.stack([self.x0, self.y0], dim=1)
+        self._d2 = torch.cdist(pos, pos) ** 2
+        self._same = (self.hemisphere[:, None] == self.hemisphere[None]).float()
+        self.hyper = {
+            "offset_sd_mm": offset_sd_mm, "smooth_sd_mm": smooth_sd_mm,
+            "length_mm": length_mm, "jitter_sd_mm": jitter_sd_mm,
+        }  # fmt: skip
+        self.K = self._kernel()
         # A pointing error of s degrees is s * M millimeters of cortex at that eccentricity.
         x_deg, y_deg = cortex_to_visual_field(self.x0, self.y0, self.hemisphere, retinotopy)
         mag = magnification(torch.hypot(x_deg, y_deg), retinotopy)
@@ -177,6 +185,52 @@ class LocationModel:
         self.sum_dy[electrode] += cy.item() - self.y0[electrode].item()
         self.count[electrode] += 1
         self._cache = None
+
+    def _kernel(self) -> Tensor:
+        c, s, length, j = (self.hyper[k] for k in _HYPER_NAMES)
+        n = len(self.x0)
+        if not self.share:
+            return (c**2 + s**2 + j**2) * torch.eye(n)
+        rbf = torch.exp(-self._d2 / (2 * length**2))
+        return self._same * (c**2 + s**2 * rbf) + j**2 * torch.eye(n)
+
+    def fit_hyperparameters(
+        self, min_electrodes: int = 10, max_iter: int = 50
+    ) -> dict[str, float] | None:
+        """Re-estimate the shared-model prior (offset, smooth field, length scale, jitter)
+        from this patient's own reports: maximize the GP marginal likelihood of the mean
+        report per electrode, plus a weak log-normal prior, since the shared offset is only
+        one draw per hemisphere. Needs reports from ``min_electrodes``; returns the new
+        values, or None if it did nothing."""
+        seen = torch.nonzero(self.count > 0)[:, 0]
+        if not self.share or len(seen) < min_electrodes:
+            return None
+        y = torch.stack([self.sum_dx[seen], self.sum_dy[seen]], 1) / self.count[seen, None]
+        noise = torch.diag(self.noise_var_mm2[seen] / self.count[seen])
+        d2, same = self._d2[seen][:, seen], self._same[seen][:, seen]
+        eye = torch.eye(len(seen))
+        start = [max(self.hyper[k], 0.01) for k in _HYPER_NAMES]
+        log_p = torch.tensor(start).log().requires_grad_()
+        optimizer = torch.optim.LBFGS([log_p], max_iter=max_iter, line_search_fn="strong_wolfe")
+
+        def closure() -> Tensor:
+            optimizer.zero_grad()
+            c, s, length, j = log_p.clamp(_LOG_MIN, _LOG_MAX).exp()
+            k = same * (c**2 + s**2 * torch.exp(-d2 / (2 * length**2))) + j**2 * eye + noise
+            chol = torch.linalg.cholesky(k)
+            # Two coordinates, each with 0.5 y^T K^-1 y + 0.5 log det K.
+            nll = 0.5 * (y * torch.cholesky_solve(y, chol)).sum()
+            nll = nll + 2 * chol.diagonal().log().sum()
+            nll = nll + 0.5 * (((log_p - _PRIOR_LOG_MEAN) / _PRIOR_LOG_SD) ** 2).sum()
+            nll.backward()
+            return nll
+
+        optimizer.step(closure)
+        fitted = log_p.detach().clamp(_LOG_MIN, _LOG_MAX).exp().tolist()
+        self.hyper = dict(zip(_HYPER_NAMES, fitted, strict=True))
+        self.K = self._kernel()
+        self._cache = None
+        return dict(self.hyper)
 
     def _posterior(self) -> tuple[Tensor, Tensor, Tensor]:
         if self._cache is None:

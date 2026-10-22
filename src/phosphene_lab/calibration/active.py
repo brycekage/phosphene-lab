@@ -55,6 +55,9 @@ class ActiveCalibrator(Calibrator):
     def after_query(self) -> None:
         if self.queries % self.cfg.prior_refresh_every == 0:
             self.refresh_threshold_priors()
+        every = self.cfg.fit_location_every
+        if every and self.queries % every == 0:
+            self.locations.fit_hyperparameters()
 
     def refresh_threshold_priors(self) -> None:
         """Set every electrode's threshold prior from its neighbors' evidence (GP over

@@ -48,6 +48,21 @@ virtual patient:
   little for the Gaussian process to share, and the active method can only win by asking
   better questions.
 
+There is a second catch. The Gaussian process needs to know *how much* patients tend to be off,
+and in which way: how big a whole-array shift is, how large and how smooth the warping is, and
+how much each electrode wanders on its own. Those spreads come from population knowledge. If
+that knowledge is wrong, for example if it says arrays never shift as a whole, the model will
+not spread one electrode's report to its neighbors, and most of the speed-up disappears.
+
+The fix is to let the patient's own answers correct the population guess. Every 50 questions,
+once at least 10 electrodes have been pointed at, the calibrator asks "which spreads would
+make the reports I have seen most likely?" (the Gaussian process's *marginal likelihood*) and
+adopts those, nudged gently toward typical values so that one lucky shift does not mislead it.
+In the experiment, a calibrator that started out believing arrays never shift needed about 1800
+questions to match a full exhaustive pass on location; with refitting it needed 64, close to
+the 32 it needs when it starts out with the right belief. When the starting belief was already
+right, refitting did no harm.
+
 ## Closing the loop
 
 A better map only matters if the patient sees better. `scripts/closed_loop.py` reruns the
