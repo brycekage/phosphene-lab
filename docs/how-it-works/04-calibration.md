@@ -67,8 +67,14 @@ questions. The explanation is in how we score: each encoder gets a fresh observe
 *this patient's* percepts, so it learns any distortion that stays the same from frame to
 frame, like a patient who adapts perfectly. Calibration matters most before a patient has
 adapted, or when the map has to be right the first time (pointing at an obstacle, reaching for
-a cup), and our observer-accuracy metric does not capture that. A fixed observer, or a
-location-based task, would be the next step.
+a cup), and that observer-accuracy metric does not capture it.
+
+So we added a second reader: a **fixed observer**, trained once under the true map and then
+shown percepts made with the uncalibrated or calibrated map, like a patient who learned to
+read the implant and has not adapted to a new error. With it, an uncalibrated map costs some
+letter accuracy and calibration wins most of it back, though the gaps are within about one
+standard deviation over three seeds. A location-based task (point at the obstacle) would test
+calibration more directly.
 
 ## Results
 
