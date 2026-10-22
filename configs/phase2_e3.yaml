@@ -34,8 +34,8 @@ quick:
 # observer loss ~1.28 = the entropy of the class frequencies, i.e. no information). Tried and
 # NOT fixed by: power_weight 0.005 (final power 0.0004, loss 1.29); power_weight 0.005 with
 # task_weight 1.0 (final power 0.0016, loss 1.28). Likely cause: navigation targets are mostly
-# black, so drawing nothing already scores a low reconstruction loss. Per-task overrides stay
-# available for a future fix, e.g.
-# task_overrides:
-#   obstacles: {power_weight: 0.005, task_weight: 1.0}
-task_overrides: {}
+# black, so drawing nothing already scores a low reconstruction loss (0.027 within 100 steps),
+# and once currents sit far below threshold the brightness sigmoid gives almost no gradient
+# back. Fix: weight lit and dark target pixels equally in the reconstruction loss.
+task_overrides:
+  obstacles: {balanced_recon: true}

@@ -26,14 +26,18 @@ no dead electrodes, default patients:
 |---|---|---|---|---|
 | letters (0.054) | 0.51 ± 0.03 | 0.45 ± 0.02 | 0.54 ± 0.01 | **0.69 ± 0.00** |
 | objects (0.10) | 0.17 ± 0.04 | 0.15 ± 0.03 | **0.26 ± 0.02** | 0.23 ± 0.02 |
-| obstacles (0.353) | 0.35 ± 0.00 | 0.35 ± 0.00 | **0.58 ± 0.02** | 0.33 ± 0.06 |
+| obstacles (0.353) | 0.35 ± 0.00 | 0.35 ± 0.00 | **0.58 ± 0.02** | 0.44 ± 0.01 |
 
 - E3 (learned) reads letters best at every array size and uses about 3x less total current than
   E0, but it drives every electrode at a low level (some below threshold), so its "active
   electrodes" count is not comparable to the others.
-- **E3 failed on obstacles:** training collapsed to almost no stimulation
-  (`results/phase2_e3_training.csv`, final mean current 0.0003 of max), so it sits at the
-  majority-class guess, as do E0 and E1. Only E2 carries obstacle information.
+- **E3 on obstacles needed a different loss.** With plain reconstruction error, training
+  collapsed to almost no stimulation (final mean current 0.0003 of max, accuracy 0.33 ± 0.06,
+  the majority guess): navigation targets are mostly black, so drawing nothing already scored
+  well, and raising the task or lowering the power weight did not help. Weighting lit and dark
+  target pixels equally (`balanced_recon` in `configs/phase2_e3.yaml`) fixed the collapse
+  (final mean current 0.06 of max, `results/phase2_e3_training.csv`) and lifted accuracy to
+  0.44 ± 0.01, above E0 and E1 (which stay at the majority guess) but still below E2.
 - Accuracy changes little from 256 to 1600 electrodes, with 30% dead electrodes, or with patient
   variability, in this setup (see the dropout and variability figures). Part of the reason is
   the observer, which is retrained for every patient (see the calibration note below).

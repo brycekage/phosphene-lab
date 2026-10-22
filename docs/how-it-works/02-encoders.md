@@ -60,9 +60,23 @@ little, would the patient's percept look more like the target?" and nudge the ne
 - **Generalizing across patients:** every training step draws a brand-new virtual patient, so
   the network cannot memorize one person's phosphene map.
 
-This follows earlier work that trained encoders through differentiable phosphene models
-(Granley et al., NeurIPS 2022; de Ruyter van Steveninck et al., 2022). The idea is not new; the
-point here is to have it working inside one benchmark, next to the simple baselines.
+**A failure worth knowing about.** For the navigation task, the first version learned to send
+almost no current at all. The reason is in the scoring: a navigation target is mostly black
+(only nearby obstacles and a few edges are lit), so a blank percept already matches it well,
+and the network found that shortcut within the first hundred training steps. Once currents sit
+far below threshold, a phosphene's brightness barely changes when the current changes, so the
+training signal that could pull the network back out is almost zero. Turning up the
+"recognize it" goal or turning down the "save power" goal did not help. What did help was
+changing how the match is scored: errors on lit pixels and on dark pixels now count equally,
+so a blank percept misses half the score. The navigation encoder then kept stimulating and
+went from chance to clearly above chance, though it still trails E2.
+
+This follows earlier work that trained encoders through differentiable phosphene models:
+Granley, Relic & Beyeler, "Hybrid Neural Autoencoders for Stimulus Encoding in Visual and
+Other Sensory Neuroprostheses" (NeurIPS 2022), and de Ruyter van Steveninck, Güçlü, van Wezel
+& van Gerven, "End-to-end optimization of prosthetic vision" (Journal of Vision 22(2):20,
+2022). The idea is not new; the point here is to have it working inside one benchmark, next to
+the simple baselines.
 
 ## The data
 

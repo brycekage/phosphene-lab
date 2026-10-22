@@ -8,6 +8,7 @@ import torch
 from phosphene_lab.encoders.learned import (
     E3TrainConfig,
     LearnedEncoder,
+    balanced_mse,
     load_e3,
     rasterize,
     train_learned_encoder,
@@ -93,6 +94,23 @@ def test_gradients_reach_the_network_through_the_renderer():
 
 
 # --- training -------------------------------------------------------------------------
+
+
+def test_balanced_mse_makes_drawing_nothing_expensive_on_sparse_targets():
+    target = torch.zeros(4, 32, 32)
+    target[:, 10:14, 10:14] = 1.0
+    blank = torch.zeros_like(target)
+    assert torch.nn.functional.mse_loss(blank, target) < 0.02  # why plain MSE collapsed
+    assert balanced_mse(blank, target) == pytest.approx(0.5)  # half the loss: lit pixels missed
+    assert balanced_mse(target, target) == 0.0
+
+
+def test_balanced_mse_equals_plain_mse_when_nothing_is_lit():
+    pred = torch.rand(2, 8, 8)
+    target = torch.zeros(2, 8, 8)
+    assert balanced_mse(pred, target) == pytest.approx(
+        torch.nn.functional.mse_loss(pred, target).item()
+    )
 
 
 def test_training_reduces_the_loss():

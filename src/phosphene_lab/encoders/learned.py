@@ -107,6 +107,19 @@ def load_e3(path: str, config: RenderConfig) -> tuple[LearnedEncoder, Observer]:
     return encoder.eval(), observer.eval()
 
 
+def balanced_mse(pred: Tensor, target: Tensor, lit: float = 0.1) -> Tensor:
+    """Mean of the squared error over lit target pixels and over dark ones, equally weighted.
+
+    Plain MSE on a mostly black target (a navigation scene) is already small for a blank
+    percept, so the encoder learns to draw nothing; here missing the lit pixels costs half.
+    """
+    err = (pred - target) ** 2
+    on = target > lit
+    if not on.any() or on.all():
+        return err.mean()
+    return 0.5 * (err[on].mean() + err[~on].mean())
+
+
 @dataclass(frozen=True)
 class E3TrainConfig:
     steps: int = 2000
@@ -115,6 +128,7 @@ class E3TrainConfig:
     electrode_counts: tuple[int, ...] = (256, 1024)
     task_weight: float = 0.1
     power_weight: float = 0.05
+    balanced_recon: bool = False  # balanced_mse instead of plain MSE (sparse targets)
     width: int = 32
     max_side: int = 64
     render: RenderConfig = field(default_factory=lambda: RenderConfig(resolution=64))
@@ -148,7 +162,8 @@ def train_learned_encoder(
 
         stim = encoder(images[idx], pmap)
         percept = renderer.render(stim)
-        recon = F.mse_loss(percept, image_to_field(targets[idx], pmap, cfg.render)[:, 0])
+        target = image_to_field(targets[idx], pmap, cfg.render)[:, 0]
+        recon = (balanced_mse if cfg.balanced_recon else F.mse_loss)(percept, target)
         task = F.cross_entropy(observer(percept), labels[idx])
         power = (stim / cfg.render.max_current_uA).mean()
         loss = recon + cfg.task_weight * task + cfg.power_weight * power
