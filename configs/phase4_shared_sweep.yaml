@@ -1,0 +1,36 @@
+# Phase 4 sensitivity: how much of a patient's deviation must be shared across the array for
+# active calibration to pay off? Total deviation is fixed (1 mm of cortical position SD, 0.4
+# log-threshold SD); the share of variance that is common to the array varies from 0 to 0.95.
+# shared fraction f: offset = sqrt(f) * 1.0 mm, jitter = sqrt(1 - f) * 1.0 mm,
+#                    threshold field = sqrt(f) * 0.4, per-electrode = sqrt(1 - f) * 0.4.
+seed: 0
+seeds: [0, 1, 2]
+patient_seed_offset: 710000
+n_electrodes: 256
+methods: [exhaustive, random, active]
+max_queries: 2048
+checkpoint_every: 32
+
+patient_models:
+  shared_0.00: {placement_offset_mm: 0.0, location_jitter_mm: 1.0,
+                threshold_field_sd: 0.0, threshold_log_sd: 0.4}
+  shared_0.25: {placement_offset_mm: 0.5, location_jitter_mm: 0.866,
+                threshold_field_sd: 0.2, threshold_log_sd: 0.346}
+  shared_0.50: {placement_offset_mm: 0.707, location_jitter_mm: 0.707,
+                threshold_field_sd: 0.283, threshold_log_sd: 0.283}
+  shared_0.75: {placement_offset_mm: 0.866, location_jitter_mm: 0.5,
+                threshold_field_sd: 0.346, threshold_log_sd: 0.2}
+  shared_0.95: {placement_offset_mm: 0.975, location_jitter_mm: 0.224,
+                threshold_field_sd: 0.39, threshold_log_sd: 0.089}
+
+output_csv: results/phase4_shared_sweep.csv
+target_csv: results/phase4_shared_sweep_queries_to_target.csv
+output_png: results/phase4_shared_sweep.png
+
+quick:
+  seeds: [0]
+  n_electrodes: 64
+  max_queries: 256
+  output_csv: results/quick/phase4_shared_sweep.csv
+  target_csv: results/quick/phase4_shared_sweep_queries_to_target.csv
+  output_png: results/quick/phase4_shared_sweep.png

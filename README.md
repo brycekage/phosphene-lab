@@ -54,12 +54,27 @@ The large location win depends on most of the error being shared across the arra
 "correlated" assumption); when every electrode errs on its own, active calibration gains little
 on location.
 
-**Closing the loop** (`scripts/closed_loop.py`, `results/phase4_closed_loop_summary.csv`): task
-accuracy for E2 and E3 was the same, within noise, with the true map, the uncalibrated guess,
-and calibrated maps. SSIM to the intended picture did improve (E2 letters: 0.462 uncalibrated,
-0.517 after 100 queries, 0.533 with the true map; `results/phase4_closed_loop.csv`). The
-per-patient observer learns any consistent distortion, so this metric cannot show
-calibration's value; see [the Phase 4 note](docs/how-it-works/04-calibration.md).
+**How much must be shared?** (`configs/phase4_shared_sweep.yaml`,
+`results/phase4_shared_sweep_queries_to_target.csv`): with total deviation held fixed, the
+queries active calibration needs to match a full exhaustive pass on location fall from 1984
+(nothing shared) to 1600, 704, 64, and 32 as the shared fraction rises through 0.25, 0.5, 0.75,
+and 0.95; for thresholds they fall from 1248 to 864. Sharing pays off once about half of the
+error is common to the array.
+
+**Closing the loop** (`scripts/closed_loop.py`, `results/phase4_closed_loop_summary.csv`):
+
+- With an observer retrained for each map (a fully adapted patient), task accuracy was the
+  same, within noise, for the true map, the uncalibrated guess, and calibrated maps.
+- With a fixed observer trained under the true map (a patient who has not adapted), the
+  uncalibrated map costs letter accuracy and calibration recovers most of it: E2 0.41 ± 0.08
+  uncalibrated, 0.44 ± 0.04 after 100 queries, 0.46 ± 0.06 after 1000, 0.46 ± 0.07 with the
+  true map; E3 0.63 ± 0.05, 0.67 ± 0.03, 0.66 ± 0.04, 0.68 ± 0.03. These gaps are within about
+  one standard deviation over 3 seeds, so they are suggestive, not conclusive. Objects and
+  obstacles show no difference.
+- SSIM to the intended picture improves clearly (E2 letters: 0.462 uncalibrated, 0.517 after 100
+  queries, 0.533 with the true map; `results/phase4_closed_loop.csv`).
+
+See [the Phase 4 note](docs/how-it-works/04-calibration.md).
 
 **Compute budget:** E3 trains in about 4-5 min per task on a laptop CPU, calibration takes
 under 2 min, and the closed loop about 12 min. The full benchmark took about 72 min of compute,
