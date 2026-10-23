@@ -1,0 +1,7 @@
+map,queries,n_seeds,mean_error_deg_mean,mean_error_deg_std,seen_fraction_mean,seen_fraction_std,location_error_deg_mean,location_error_deg_std
+true,0,3,0.4833,0.0363,0.6989,0.0509,0.0,0.0
+uncalibrated,0,3,0.8775,0.1076,0.6967,0.0321,0.634,0.2279
+active_32,32,3,0.5605,0.097,0.6956,0.0509,0.2002,0.0556
+active_100,100,3,0.5752,0.0919,0.6978,0.044,0.1828,0.0379
+active_300,300,3,0.5853,0.1203,0.7022,0.0403,0.1529,0.0239
+active_1000,1000,3,0.5485,0.0833,0.7045,0.0505,0.1296,0.0103

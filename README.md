@@ -85,6 +85,14 @@ refitting, 0.15 ± 0.01 deg with it.
   true map; E3 0.63 ± 0.05, 0.67 ± 0.03, 0.66 ± 0.04, 0.68 ± 0.03. These gaps are within about
   one standard deviation over 3 seeds, so they are suggestive, not conclusive. Objects and
   obstacles show no difference.
+- **Pointing task** (`scripts/pointing_task.py`, `results/phase4_pointing_summary.csv`): E0
+  shows a white dot, and the patient points at the brightness centroid of what they see; no
+  observer is trained, so a wrong map cannot be learned around. Mean miss over 3 patients:
+  0.48 ± 0.04 deg with the true map (the floor: a few hundred blurry phosphenes cannot draw a
+  dot exactly), 0.88 ± 0.11 deg uncalibrated, 0.56 ± 0.10 deg after 32 active queries (~3
+  min), and 0.55 ± 0.08 deg after 1000. So most of the pointing error from an uncalibrated map
+  is removed within minutes, and more queries add little. About 30% of dots fall where this
+  implant has no phosphenes and are not seen, with any map.
 - SSIM to the intended picture improves clearly (E2 letters: 0.462 uncalibrated, 0.517 after 100
   queries, 0.533 with the true map; `results/phase4_closed_loop.csv`).
 
@@ -181,6 +189,9 @@ Calibration (Phase 4):
   spreads (shift, smooth field, its length scale, per-electrode jitter) under a weak prior
   centered on 1 mm (5 mm for the length scale); the threshold model's population values stay
   fixed.
+- **Pointing:** the simulated patient points exactly at the brightness centroid of the
+  percept, and "correct" means where the same image lands when placed with the true map, so
+  the task measures map errors only, not motor noise or how a person judges a blob's center.
 
 ## Acknowledgements
 

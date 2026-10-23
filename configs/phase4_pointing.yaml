@@ -1,0 +1,32 @@
+# Phase 4 pointing task: show a dot, the patient points at it; how far off are they, with the
+# true map, the uncalibrated guess, and maps from active calibration after k queries?
+# Same patients and calibration as configs/phase4_closed_loop.yaml.
+seed: 0
+seeds: [0, 1, 2]
+patient_seed_offset: 800000
+n_electrodes: 256
+patient_model:
+  location_jitter_mm: 0.3
+  placement_offset_mm: 1.5
+  placement_rotation_deg: 5.0
+  threshold_log_sd: 0.2
+  threshold_field_sd: 0.35
+calibration_queries: [32, 100, 300, 1000]
+n_dots: 300
+image_size: 48
+dot_radius_frac: 0.08            # disc radius as a fraction of the image side
+render:
+  resolution: 32
+  field_deg: 20.0
+  max_current_uA: 100.0
+
+output_csv: results/phase4_pointing.csv
+summary_csv: results/phase4_pointing_summary.csv
+
+quick:
+  seeds: [0]
+  n_electrodes: 64
+  calibration_queries: [32]
+  n_dots: 50
+  output_csv: results/quick/phase4_pointing.csv
+  summary_csv: results/quick/phase4_pointing_summary.csv

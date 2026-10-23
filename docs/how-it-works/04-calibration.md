@@ -88,8 +88,18 @@ So we added a second reader: a **fixed observer**, trained once under the true m
 shown percepts made with the uncalibrated or calibrated map, like a patient who learned to
 read the implant and has not adapted to a new error. With it, an uncalibrated map costs some
 letter accuracy and calibration wins most of it back, though the gaps are within about one
-standard deviation over three seeds. A location-based task (point at the obstacle) would test
-calibration more directly.
+standard deviation over three seeds.
+
+So we also tested calibration directly, with a **pointing task**. The implant shows a single
+white dot, and the patient points at the middle of the glow they see. Nothing is learned, so
+the patient cannot compensate for a wrong map: if the system thinks an electrode sits at the
+top left when it really sits at the bottom right, the dot appears in the wrong place and the
+finger goes there. With the true map the patient misses by about half a degree on average,
+because a few hundred blurry phosphenes cannot draw a dot exactly. With the uncalibrated guess
+the miss nearly doubles, to about 0.9 degrees. After just 32 calibration questions (about 3
+minutes in clinic) it is back to about 0.56 degrees, and a thousand more questions barely
+improve on that. About 30% of dots land where this implant has no phosphenes and are never
+seen, whatever the map; calibration cannot fix that, only a different implant layout can.
 
 ## Results
 
