@@ -14,6 +14,10 @@ The full plan is in `PROJECT_SPEC.md`; read the section for the current phase be
   `scripts/encoder_gallery.py`. Phase 3: `scripts/run_benchmark.py`. Phase 4:
   `scripts/run_calibration.py`, `scripts/closed_loop.py` (needs E3 checkpoints from train_e3),
   `scripts/pointing_task.py`. `scripts/obstacle_ceiling.py` measures no-simulator ceilings.
+- Phase 5 demo: `.venv/Scripts/python.exe app/app.py` (http://127.0.0.1:7860; `--quick` is a
+  headless smoke run). Logic in `src/phosphene_lab/demo/`. The README GIF is browser
+  screenshots of the running app in `results/quick/demo_frames/`, assembled by
+  `scripts/make_demo_gif.py`.
 - E2 targets are cached in `data/<dataset>/targets_*.npy`, keyed by image content hash.
 - Configs load via `phosphene_lab.config.load_config`; every `quick:` block must redirect outputs
   to `results/quick/` (git-ignored) so smoke runs never overwrite real results.

@@ -22,7 +22,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
       - name: Install
-        run: uv sync --locked
+        run: uv sync --locked --no-group demo
       - name: Lint
         run: |
           uv run ruff check .
