@@ -3,13 +3,27 @@
 An end-to-end sandbox for encoding and calibrating cortical visual prostheses.
 Work in progress; see [PROJECT_SPEC.md](PROJECT_SPEC.md) for the plan.
 
+![The interactive demo: what different encoders show a simulated patient, then the
+calibration game](results/phase5_demo.gif)
+
+*The demo app (`app/app.py`, 46 s, real screenshots of the running app; all patients are
+simulated). First the viewer: one photo through the naive, edge, and scene encoders, then 1600
+electrodes, 30% dead electrodes, 3 s of adaptation, and a sign in reading mode with the learned
+encoder. Then the calibration game: the player is the patient, clicking where each flash
+appears; here a few answers are clicked and then the virtual patient answers the rest. This
+patient's map reached the accuracy of a full exhaustive pass (512 queries) after 111.*
+
 ## Quickstart
 
 ```bash
 uv sync
 uv run pytest
 uv run python scripts/render_reference.py --quick   # writes results/phase0_reference.png
+uv run python app/app.py                            # the demo, at http://127.0.0.1:7860
 ```
+
+E3 in the demo needs the checkpoints from `scripts/train_e3.py` (not in git); without them the
+demo offers E0-E2. E2 downloads its two pretrained networks (~115 MB) on first use.
 
 ## Results so far (Phases 2-4)
 
@@ -115,6 +129,7 @@ separate (task, seed) parts.
 - [Phase 2: encoders](docs/how-it-works/02-encoders.md)
 - [Phase 3: the benchmark](docs/how-it-works/03-benchmark.md)
 - [Phase 4: fast calibration](docs/how-it-works/04-calibration.md)
+- [Phase 5: the interactive demo](docs/how-it-works/05-demo.md)
 
 ## Assumptions
 
@@ -200,6 +215,18 @@ Calibration (Phase 4):
 - **Pointing:** the simulated patient points exactly at the brightness centroid of the
   percept, and "correct" means where the same image lands when placed with the true map, so
   the task measures map errors only, not motor noise or how a person judges a blob's center.
+
+Demo (Phase 5):
+
+- **Viewer patient:** the viewer shows a default virtual patient and encodes with that
+  patient's true phosphene map, as if calibration were perfect; the game covers the rest.
+- **Percepts on a screen:** a monitor shows the simulator's grayscale blobs, which is not what a
+  phosphene looks like to an implant user, only where and how bright the model says it is.
+- **The player as patient:** a sighted player sees the simulated flash on a screen and clicks
+  it, so their answers are far more precise than real pointing; the calibrator still assumes
+  the population's 0.5 deg pointing noise.
+- **Game size:** the game uses a 64-electrode array so that it can be played by hand; Phase 4
+  ran 256 electrodes.
 
 ## Acknowledgements
 
