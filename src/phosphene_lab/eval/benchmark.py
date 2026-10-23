@@ -17,7 +17,7 @@ from torch import Tensor
 
 from phosphene_lab.encoders.base import Encoder, image_to_field
 from phosphene_lab.encoders.edges import EdgeEncoder
-from phosphene_lab.encoders.learned import load_e3
+from phosphene_lab.encoders.learned import LearnedEncoder, load_e3
 from phosphene_lab.encoders.naive import NaiveEncoder
 from phosphene_lab.encoders.scene import SceneEncoder
 from phosphene_lab.eval.metrics import mean_ssim, stimulation_stats
@@ -84,6 +84,9 @@ def encode(
     for i in range(0, len(images), batch_size):
         if isinstance(encoder, SceneEncoder):
             out.append(encoder.encode_targets(targets[i : i + batch_size], pmap))
+        elif isinstance(encoder, LearnedEncoder):
+            x = encoder.inputs(images[i : i + batch_size], targets[i : i + batch_size])
+            out.append(encoder(x, pmap))
         else:
             out.append(encoder(images[i : i + batch_size], pmap))
     return torch.cat(out)

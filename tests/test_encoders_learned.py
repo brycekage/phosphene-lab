@@ -76,6 +76,17 @@ def test_output_depends_on_the_patient_map():
     assert not torch.allclose(encoder(image, pmap), encoder(image, high))
 
 
+def test_scene_input_adds_the_simplified_scene_as_a_channel():
+    torch.manual_seed(0)
+    images, targets = torch.rand(2, 3, 24, 24), torch.rand(2, 1, 24, 24)
+    plain, scene = LearnedEncoder(), LearnedEncoder(scene_input=True)
+    assert torch.equal(plain.inputs(images, targets), images)
+    x = scene.inputs(images, targets)
+    assert x.shape == (2, 4, 24, 24) and torch.equal(x[:, 3:], targets)
+    pmap = _grid_map(64)
+    assert not torch.allclose(scene(x, pmap), scene(scene.inputs(images, 1 - targets), pmap))
+
+
 def test_dead_electrodes_stay_off():
     torch.manual_seed(0)
     alive = torch.ones(256, dtype=torch.bool)
@@ -142,3 +153,18 @@ def test_checkpoint_round_trip(tmp_path):
     image, pmap = torch.rand(1, 3, 16, 16), _grid_map(64)
     torch.testing.assert_close(loaded(image, pmap), encoder.eval()(image, pmap))
     assert loaded_observer.head[-1].out_features == 3
+    assert not loaded.scene_input  # checkpoints from before the option default to photo only
+
+
+def test_checkpoint_round_trip_keeps_scene_input(tmp_path):
+    torch.manual_seed(0)
+    encoder = LearnedEncoder(width=8, scene_input=True)
+    path = tmp_path / "e3.pt"
+    torch.save(
+        {"encoder": encoder.state_dict(), "observer": Observer(4).state_dict(), "width": 8,
+         "max_side": 64, "n_classes": 4, "scene_input": True},
+        path,
+    )  # fmt: skip
+    loaded, _ = load_e3(str(path), RenderConfig())
+    x, pmap = torch.rand(1, 4, 16, 16), _grid_map(64)
+    torch.testing.assert_close(loaded(x, pmap), encoder.eval()(x, pmap))

@@ -57,11 +57,16 @@ class LearnedEncoder(Encoder):
         width: int = 32,
         config: RenderConfig = RenderConfig(),  # noqa: B008 - frozen dataclass
         max_side: int = 64,
+        scene_input: bool = False,
     ) -> None:
         super().__init__(config)
         # Images are shrunk so the long side is at most this many pixels: a few hundred
         # phosphenes cannot show finer detail, and it keeps training within the CPU budget.
         self.max_side = max_side
+        # With scene_input the network also sees E2's simplified scene (from pretrained depth
+        # and segmentation networks), which a small CNN cannot learn from ~1000 photos.
+        self.scene_input = scene_input
+        c_in = 3 + int(scene_input) + 2  # image (+ scene) + two phosphene-map channels
 
         def conv(c_in: int, c_out: int, dilation: int = 1) -> nn.Sequential:
             return nn.Sequential(
@@ -70,9 +75,13 @@ class LearnedEncoder(Encoder):
 
         # Dilations 1-2-4-8 give a ~31-px receptive field without downsampling.
         self.net = nn.Sequential(
-            conv(5, width), conv(width, width, 2), conv(width, width, 4), conv(width, width, 8),
+            conv(c_in, width), conv(width, width, 2), conv(width, width, 4), conv(width, width, 8),
             conv(width, width), nn.Conv2d(width, 1, 1),
         )  # fmt: skip
+
+    def inputs(self, images: Tensor, targets: Tensor) -> Tensor:
+        """What the network reads: the image, plus the E2 scene (B, 1, H, W) if scene_input."""
+        return torch.cat([images, targets], dim=1) if self.scene_input else images
 
     def map_channels(self, pmap: PhospheneMap, hw: tuple[int, int]) -> Tensor:
         """(1, 2, H, W): phosphene density, and the local mean threshold as a fraction of max."""
@@ -100,7 +109,9 @@ class LearnedEncoder(Encoder):
 def load_e3(path: str, config: RenderConfig) -> tuple[LearnedEncoder, Observer]:
     """Encoder and observer from a checkpoint written by scripts/train_e3.py."""
     ckpt = torch.load(path, map_location="cpu", weights_only=True)
-    encoder = LearnedEncoder(ckpt["width"], config, ckpt["max_side"])
+    encoder = LearnedEncoder(
+        ckpt["width"], config, ckpt["max_side"], ckpt.get("scene_input", False)
+    )
     encoder.load_state_dict(ckpt["encoder"])
     observer = Observer(ckpt["n_classes"])
     observer.load_state_dict(ckpt["observer"])
@@ -129,6 +140,7 @@ class E3TrainConfig:
     task_weight: float = 0.1
     power_weight: float = 0.05
     balanced_recon: bool = False  # balanced_mse instead of plain MSE (sparse targets)
+    scene_input: bool = False  # the network also reads the E2 scene (see LearnedEncoder)
     width: int = 32
     max_side: int = 64
     render: RenderConfig = field(default_factory=lambda: RenderConfig(resolution=64))
@@ -146,7 +158,7 @@ def train_learned_encoder(
     """
     torch.manual_seed(cfg.seed)
     rng = random.Random(cfg.seed)
-    encoder = LearnedEncoder(cfg.width, cfg.render, cfg.max_side)
+    encoder = LearnedEncoder(cfg.width, cfg.render, cfg.max_side, cfg.scene_input)
     observer = Observer(n_classes)
     params = list(encoder.parameters()) + list(observer.parameters())
     optimizer = torch.optim.Adam(params, lr=cfg.lr)
@@ -160,7 +172,7 @@ def train_learned_encoder(
         renderer = PhospheneRenderer(pmap, cfg.render)
         idx = torch.randint(0, len(labels), (cfg.batch_size,))
 
-        stim = encoder(images[idx], pmap)
+        stim = encoder(encoder.inputs(images[idx], targets[idx]), pmap)
         percept = renderer.render(stim)
         target = image_to_field(targets[idx], pmap, cfg.render)[:, 0]
         recon = (balanced_mse if cfg.balanced_recon else F.mse_loss)(percept, target)

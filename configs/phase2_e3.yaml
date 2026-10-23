@@ -37,5 +37,8 @@ quick:
 # black, so drawing nothing already scores a low reconstruction loss (0.027 within 100 steps),
 # and once currents sit far below threshold the brightness sigmoid gives almost no gradient
 # back. Fix: weight lit and dark target pixels equally in the reconstruction loss.
+# That alone reached 0.44 accuracy, the same as an observer gets from the 48-px photo itself
+# (0.43, no simulator), while the E2 scene allows 0.63: obstacles are defined by depth, which
+# the small CNN cannot learn from ~1000 photos. So the obstacle E3 also reads the E2 scene.
 task_overrides:
-  obstacles: {balanced_recon: true}
+  obstacles: {balanced_recon: true, scene_input: true}

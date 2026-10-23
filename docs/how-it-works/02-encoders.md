@@ -69,7 +69,17 @@ training signal that could pull the network back out is almost zero. Turning up 
 "recognize it" goal or turning down the "save power" goal did not help. What did help was
 changing how the match is scored: errors on lit pixels and on dark pixels now count equally,
 so a blank percept misses half the score. The navigation encoder then kept stimulating and
-went from chance to clearly above chance, though it still trails E2.
+went from chance to clearly above chance, but it still trailed E2.
+
+The reason it trailed is worth spelling out, because no amount of training would have fixed
+it. An obstacle label means "something within 1.5 m on this side", so it is about *depth*.
+E2 gets depth from a large pretrained network; E3 only saw a 48-pixel photo, and a small
+network cannot learn depth from about a thousand photos. A quick check confirmed this: a
+classifier shown the 48-pixel photos directly, with no implant in the way, scored 0.43, the
+same as E3, while one shown E2's depth-based scene scored 0.63. So we gave E3 that scene as an
+extra input. It is now a learned layer on top of E2 rather than a rival to it, and it beats E2
+(0.62 vs 0.58), most clearly for patients who differ a lot from the average or who have many
+dead electrodes: it learned to draw the scene in a way that survives a messy implant.
 
 This follows earlier work that trained encoders through differentiable phosphene models:
 Granley, Relic & Beyeler, "Hybrid Neural Autoencoders for Stimulus Encoding in Visual and

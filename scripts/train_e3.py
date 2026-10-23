@@ -58,6 +58,7 @@ def main() -> None:
         torch.save(
             {"encoder": encoder.state_dict(), "observer": observer.state_dict(),
              "width": train_cfg.width, "max_side": train_cfg.max_side,
+             "scene_input": train_cfg.scene_input,
              "n_classes": task.n_classes, "history": history},
             ckpt_dir / f"e3_{name}.pt",
         )  # fmt: skip

@@ -1,0 +1,17 @@
+# How much obstacle information is in each encoder input before the simulator? The same
+# observer as the benchmark, trained directly on the 48-px photo (grayscale) or on the E2
+# navigation scene, with no phosphenes in between.
+seeds: [0, 1, 2]
+data_root: data
+side_px: 48                      # E3's max_side
+observer_epochs: 6               # same observer settings as configs/benchmark.yaml
+observer_width: 16
+limits: {train: null, test: null}
+
+output_csv: results/obstacle_ceiling.csv
+
+quick:
+  seeds: [0]
+  limits: {train: 100, test: 50}
+  observer_epochs: 1
+  output_csv: results/quick/obstacle_ceiling.csv

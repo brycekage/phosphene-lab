@@ -12,7 +12,8 @@ The full plan is in `PROJECT_SPEC.md`; read the section for the current phase be
 - Phase 1 cross-check: `.venv/Scripts/python.exe scripts/compare_simulators.py [--quick]`
 - Phase 2: `scripts/download_data.py` (~4 GB raw into `data/raw`, once), `scripts/train_e3.py`,
   `scripts/encoder_gallery.py`. Phase 3: `scripts/run_benchmark.py`. Phase 4:
-  `scripts/run_calibration.py`, `scripts/closed_loop.py` (needs E3 checkpoints from train_e3).
+  `scripts/run_calibration.py`, `scripts/closed_loop.py` (needs E3 checkpoints from train_e3),
+  `scripts/pointing_task.py`. `scripts/obstacle_ceiling.py` measures no-simulator ceilings.
 - E2 targets are cached in `data/<dataset>/targets_*.npy`, keyed by image content hash.
 - Configs load via `phosphene_lab.config.load_config`; every `quick:` block must redirect outputs
   to `results/quick/` (git-ignored) so smoke runs never overwrite real results.

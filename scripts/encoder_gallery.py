@@ -71,7 +71,8 @@ def main() -> None:
                 ]
                 with torch.no_grad():
                     for enc_name, encoder in encoders.items():
-                        stim = encoder(image, pmap)
+                        x = e3.inputs(image, target) if encoder is e3 else image
+                        stim = encoder(x, pmap)
                         columns.append((enc_name, renderer.render(stim)[0]))
                         active = stim[0] > 0
                         mean_current = stim[0][active].mean().item() if active.any() else 0.0
