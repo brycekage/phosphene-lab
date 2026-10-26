@@ -18,6 +18,12 @@ The full plan is in `PROJECT_SPEC.md`; read the section for the current phase be
   headless smoke run). Logic in `src/phosphene_lab/demo/`. The README GIF is browser
   screenshots of the running app in `results/quick/demo_frames/`, assembled by
   `scripts/make_demo_gif.py`.
+- Phase 6 pilot page: `scripts/make_pilot_stimuli.py` (renders `results/pilot_stimuli/` once),
+  then `.venv/Scripts/python.exe app/pilot.py` (http://127.0.0.1:7861). It saves NO answers
+  until Bryce decides on IRB. Both apps share `src/phosphene_lab/demo/theme.py` (colors, CSS,
+  launch options); keep new UI on its tokens.
+- Hugging Face Spaces: `scripts/deploy_space.py --config configs/demo.yaml` (demo) or
+  `--config configs/phase6_pilot.yaml` (pilot). Both private; `--quick` only stages.
 - E2 targets are cached in `data/<dataset>/targets_*.npy`, keyed by image content hash.
 - Configs load via `phosphene_lab.config.load_config`; every `quick:` block must redirect outputs
   to `results/quick/` (git-ignored) so smoke runs never overwrite real results.

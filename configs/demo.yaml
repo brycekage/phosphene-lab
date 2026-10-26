@@ -26,3 +26,15 @@ gif:
 quick:                           # headless smoke run: no browser, no network weights
   game: {n_electrodes: 16, patient_config: configs/phase4_calibration.yaml,
          patient_model: correlated, autoplay_step: 10}
+
+# Hugging Face Space (scripts/deploy_space.py). Private until the license review is done.
+space:
+  repo_id: brycekage/phosphene-lab    # change if your Hugging Face username differs
+  private: true
+  entry: app/app.py
+  title: Phosphene Lab
+  summary: See what a cortical visual implant user might see, and play the patient in an active calibration game.
+  staging_dir: results/quick/space    # git-ignored build of exactly what gets uploaded
+  sdk_version: 6.30.0                 # matches the local gradio
+  copy: [src/phosphene_lab, app/app.py, configs]
+  checkpoints: [checkpoints/e3_letters.pt, checkpoints/e3_objects.pt, checkpoints/e3_obstacles.pt]
