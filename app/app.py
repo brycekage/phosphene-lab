@@ -33,13 +33,63 @@ from phosphene_lab.calibration.common import SECONDS_PER_QUERY  # noqa: E402
 from phosphene_lab.config import load_config  # noqa: E402
 from phosphene_lab.demo import (  # noqa: E402
     ELECTRODE_COUNTS,
-    ENCODERS,
     CalibrationGame,
     Viewer,
     ViewSettings,
 )
-from phosphene_lab.encoders.scene import MODES  # noqa: E402
+from phosphene_lab.demo.theme import COLORS, launch_options  # noqa: E402
 from phosphene_lab.simulator.patient import PatientParams  # noqa: E402
+
+ENCODER_LABELS = {
+    "E0": "E0 · Brightness",
+    "E1": "E1 · Edges",
+    "E2": "E2 · Scene (depth + objects)",
+    "E3": "E3 · Learned",
+}
+MODE_LABELS = {"navigation": "Walking", "people": "People", "reading": "Reading"}
+
+HEADER = """
+<div class="ph-header">
+  <p class="ph-eyebrow">Phosphene Lab · cortical visual prosthesis simulator
+  <span class="ph-pill">All patients here are simulated</span></p>
+  <h1>See what a visual implant user might see</h1>
+  <p class="ph-lead">An implant in the visual cortex draws the world as a sparse grid of
+  light dots called <em>phosphenes</em>. Choose a scene and an encoding strategy to see the
+  result, or play the patient and help calibrate an implant.</p>
+</div>
+"""
+
+ENCODER_HELP = """
+<ul class="ph-steps">
+  <li><b>E0 Brightness:</b> lights each dot by how bright the camera image is there.</li>
+  <li><b>E1 Edges:</b> lights the outlines of things instead of their surfaces.</li>
+  <li><b>E2 Scene:</b> two neural networks estimate depth and find objects, and only what
+  matters for the chosen task is drawn (for walking: nearby obstacles).</li>
+  <li><b>E3 Learned:</b> a small network trained through the simulator to make percepts
+  that a reader can classify, while using little current.</li>
+</ul>
+<p class="ph-note">The left panel is what the encoder asks for; the right panel is what the
+patient perceives once real-world limits apply: few dots, misplaced dots, dead electrodes,
+and fading during steady viewing.</p>
+"""
+
+GAME_STEPS = """
+<ol class="ph-steps">
+  <li>Look at the small cross in the middle of the left panel.</li>
+  <li>When a dot of light flashes, <b>click where you saw it</b>. Faint flashes are on
+  purpose: if you see nothing, press <b>I saw nothing</b>.</li>
+  <li>Each answer updates the system's map of the implant (right). Watch the error lines
+  shrink.</li>
+</ol>
+"""
+
+LEGEND = """
+<div class="ph-legend">
+  <span><span class="ph-swatch truth"></span>True position</span>
+  <span><span class="ph-swatch estimate"></span>System's estimate</span>
+  <span><span class="ph-swatch error"></span>Error</span>
+</div>
+"""
 
 
 def sign_image(text: str = "EXIT") -> np.ndarray:
@@ -58,11 +108,14 @@ def sign_image(text: str = "EXIT") -> np.ndarray:
 
 # Public-domain / CC0 photos bundled with scikit-image, plus a generated sign.
 SAMPLES = {
-    "astronaut (people)": data.astronaut,
-    "coffee cup": data.coffee,
-    "cat": data.chelsea,
-    "EXIT sign (reading)": sign_image,
+    "Person": data.astronaut,
+    "Coffee cup": data.coffee,
+    "Cat": data.chelsea,
+    "EXIT sign": sign_image,
 }
+# The priority mode that suits each sample, so choosing one shows it at its best.
+SAMPLE_MODE = {"Person": "people", "Coffee cup": "navigation", "Cat": "navigation",
+               "EXIT sign": "reading"}  # fmt: skip
 
 
 def to_display(field: np.ndarray, px: int) -> np.ndarray:
@@ -81,17 +134,36 @@ def with_fixation(img: np.ndarray) -> np.ndarray:
     return img
 
 
+def chips(*items: tuple[str, str]) -> str:
+    return '<div class="ph-readout">' + "".join(
+        f'<span class="ph-chip">{label} <b>{value}</b></span>' for label, value in items
+    ) + "</div>"  # fmt: skip
+
+
 def error_plot(game: CalibrationGame):
-    fig, ax = plt.subplots(figsize=(5, 2.6))
-    ax.plot(range(len(game.history)), game.history, color="tab:green", label="active (you)")
+    c = COLORS
+    fig, ax = plt.subplots(figsize=(6, 2.4))
+    fig.patch.set_facecolor(c["surface"])
+    ax.set_facecolor(c["surface"])
+    n = len(game.history)
+    ax.plot(range(n), game.history, color=c["estimate"], lw=2, label="Your answers")
     ax.axhline(
-        game.target_error_deg, color="gray", ls="--",
-        label=f"full exhaustive pass ({game.exhaustive_queries} queries)",
+        game.target_error_deg, color=c["truth"], ls="--", lw=1,
+        label=f"Full exhaustive pass ({game.exhaustive_queries} questions)",
     )  # fmt: skip
-    ax.set_xlabel("queries answered")
-    ax.set_ylabel("map error (deg)")
-    ax.set_ylim(bottom=0)
-    ax.legend(fontsize=8)
+    ax.set_xlim(0, max(10, n))
+    ax.set_ylim(0, max(game.history + [game.target_error_deg]) * 1.15)
+    ax.set_xlabel("questions answered", color=c["muted"])
+    ax.set_ylabel("map error (deg)", color=c["muted"])
+    ax.tick_params(colors=c["muted"])
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(c["border"])
+    ax.set_title("Map error as you answer", color=c["text"], fontsize=10, loc="left")
+    legend = ax.legend(fontsize=8, frameon=False, loc="upper right")
+    for text in legend.get_texts():
+        text.set_color(c["text"])
     fig.tight_layout()
     plt.close(fig)
     return fig
@@ -100,50 +172,71 @@ def error_plot(game: CalibrationGame):
 def game_status(game: CalibrationGame) -> str:
     s = game.status()
     electrode, current = game.pending
-    lines = [
-        f"**Queries answered:** {s['queries']} · **map error:** {s['location_error_deg']:.2f} deg"
-        f" · **a full exhaustive pass ({s['exhaustive_queries']} queries) reaches:** "
-        f"{s['target_error_deg']:.2f} deg",
-    ]
+    html = chips(
+        ("Questions answered", str(s["queries"])),
+        ("Map error", f"{s['location_error_deg']:.2f}°"),
+        ("Exhaustive pass", f"{s['exhaustive_queries']} questions → {s['target_error_deg']:.2f}°"),
+    )
     if s["reached_at"] is not None:
         minutes = s["saved"] * SECONDS_PER_QUERY / 60
-        lines.append(
-            f"Reached exhaustive-pass accuracy after **{s['reached_at']} queries**, saving "
-            f"**{s['saved']} queries** (~{minutes:.0f} clinic minutes at 5 s per query)."
+        html += (
+            f'<div class="ph-callout">Matched a full exhaustive pass after '
+            f"<b>{s['reached_at']} questions</b>: {s['saved']} fewer, about "
+            f"{minutes:.0f} minutes of clinic time at {SECONDS_PER_QUERY:.0f} s per question."
+            "</div>"
         )
-    lines.append(f"Next question: electrode {electrode} at {current:.0f} uA.")
-    return "\n\n".join(lines)
+    html += f'<p class="ph-note">Next flash: electrode {electrode} at {current:.0f} µA.</p>'
+    return html
 
 
-def build(cfg: dict) -> gr.Blocks:
+def build(cfg: dict, warm: bool = False) -> gr.Blocks:
     viewer = Viewer(cfg["checkpoint_dir"], resolution=cfg["render_resolution"])
+    if warm:
+        viewer.warm()
     px, res = cfg["display_px"], cfg["render_resolution"]
     gcfg = cfg["game"]
     population = load_config(gcfg["patient_config"], False)["patient_models"]
     params = PatientParams(**population[gcfg["patient_model"]])
 
     def encoder_choices(mode: str) -> list[tuple[str, str]]:
-        return [(ENCODERS[k], k) for k in viewer.available_encoders(mode)]
+        return [(ENCODER_LABELS[k], k) for k in viewer.available_encoders(mode)]
 
-    def run_view(image, encoder, mode, n, dropout, adaptation, seed):
+    def on_mode(mode: str, encoder: str):
+        available = viewer.available_encoders(mode)
+        return gr.update(choices=encoder_choices(mode),
+                         value=encoder if encoder in available else "E2")  # fmt: skip
+
+    def on_sample(name: str):
+        return SAMPLES[name](), SAMPLE_MODE[name]
+
+    def run_view(image, encoder, mode, n, dead_pct, adaptation, seed):
         if image is None:
-            return None, None, "Choose a sample, upload a photo, or take a webcam snapshot."
+            empty = "Choose a sample, upload a photo, or take a webcam snapshot."
+            return None, None, f'<p class="ph-note">{empty}</p>'
         if encoder not in viewer.available_encoders(mode):
-            gr.Warning(f"{ENCODERS[encoder]} has no trained model for {mode} mode; using E2.")
-            encoder = "E2"
+            encoder = "E2"  # the encoder radio is switched to E2 at the same time
         start = time.perf_counter()
-        settings = ViewSettings(int(n), float(dropout), float(adaptation), encoder, mode, int(seed))
-        out = viewer.view(image, settings)
-        stats = (
-            f"**{out.active_electrodes}** of {int(n)} electrodes on · total current "
-            f"**{out.total_current_uA / 1000:.1f} mA** per frame · computed in "
-            f"{time.perf_counter() - start:.1f} s"
+        settings = ViewSettings(
+            int(n), float(dead_pct) / 100, float(adaptation), encoder, mode, int(seed or 0)
+        )
+        try:
+            out = viewer.view(image, settings)
+        except Exception as exc:  # shown to the visitor instead of a stack trace
+            raise gr.Error(f"Could not process this image ({type(exc).__name__}). "
+                           "Try another photo or a sample.") from exc  # fmt: skip
+        stats = chips(
+            ("Electrodes lit", f"{out.active_electrodes} / {int(n)}"),
+            ("Current", f"{out.total_current_uA / 1000:.1f} mA"),
+            ("Computed in", f"{time.perf_counter() - start:.1f} s"),
         )
         return to_display(out.drawn, px), to_display(out.percept, px), stats
 
     def new_game(seed):
         game = CalibrationGame(gcfg["n_electrodes"], params, int(seed), res)
-        return game, *game_outputs(game)
+        return game, seed, *game_outputs(game)
+
+    def next_patient(seed):
+        return new_game(int(seed) + 1)
 
     def game_outputs(game):
         return (
@@ -166,70 +259,99 @@ def build(cfg: dict) -> gr.Blocks:
         game.autoplay(gcfg["autoplay_step"])
         return game, *game_outputs(game)
 
-    with gr.Blocks(title="phosphene-lab") as demo:
-        gr.Markdown(
-            "# phosphene-lab\nA simulation of what a cortical visual prosthesis user might see, "
-            "and of how fast the implant can be calibrated. All patients here are simulated."
-        )
-        with gr.Tab("Viewer"):
-            with gr.Row():
-                with gr.Column(scale=1):
+    no_buttons: list = []
+    first = "Person"
+    # Uploaded files sit in Gradio's cache; delete them after an hour at most.
+    with gr.Blocks(title="Phosphene Lab", fill_width=True, delete_cache=(1800, 3600)) as demo:
+        gr.HTML(HEADER, padding=False)
+        with gr.Tab("What the patient sees"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=5, min_width=320):
+                    gr.HTML('<p class="ph-section-title">1 · Scene</p>', padding=False)
+                    sample = gr.Radio(list(SAMPLES), value=first, label="Try a sample",
+                                      show_label=True)  # fmt: skip
                     image = gr.Image(
-                        sources=["upload", "webcam", "clipboard"], type="numpy",
-                        label="Camera image", height=px,
+                        value=SAMPLES[first](), sources=["upload", "webcam", "clipboard"],
+                        type="numpy", label="Or use your own photo or webcam", height=200,
+                        buttons=no_buttons,
                     )  # fmt: skip
-                    sample = gr.Radio(list(SAMPLES), label="Sample images")
-                drawn = gr.Image(label="What the encoder draws (in the visual field)", height=px)
-                percept = gr.Image(label="Phosphene percept", height=px)
-            stats = gr.Markdown()
-            with gr.Row():
-                mode = gr.Radio(list(MODES), value="navigation", label="Priority mode")
-                encoder = gr.Radio(encoder_choices("navigation"), value="E2", label="Encoder")
-            with gr.Row():
-                n = gr.Dropdown(list(ELECTRODE_COUNTS), value=256, label="Electrodes")
-                dropout = gr.Slider(0, 0.5, value=0.1, step=0.05, label="Dead electrodes")
-                adaptation = gr.Slider(
-                    0, 5, value=0, step=0.5, label="Adaptation: seconds of steady viewing"
-                )
-                seed = gr.Number(value=0, precision=0, label="Virtual patient")
-            gr.Markdown(
-                "E2 and E3 run two pretrained networks (depth and segmentation, ~115 MB, "
-                "downloaded once); the first use takes ~20 s, then ~1 s per image on a laptop CPU."
-            )
-            controls = [image, encoder, mode, n, dropout, adaptation, seed]
-            for c in controls:
+                    gr.HTML('<p class="ph-section-title">2 · Implant</p>', padding=False)
+                    encoder = gr.Radio(
+                        encoder_choices(SAMPLE_MODE[first]), value="E2", label="Encoder",
+                        info="How the camera image becomes electrode currents",
+                    )  # fmt: skip
+                    mode = gr.Radio(
+                        [(MODE_LABELS[m], m) for m in MODE_LABELS], value=SAMPLE_MODE[first],
+                        label="Priority", info="What the scene encoders keep when dots are scarce",
+                    )  # fmt: skip
+                    with gr.Row():
+                        n = gr.Dropdown(list(ELECTRODE_COUNTS), value=256, label="Electrodes",
+                                        info="More electrodes, finer detail")  # fmt: skip
+                        seed = gr.Number(value=0, precision=0, minimum=0, maximum=999,
+                                         label="Virtual patient",
+                                         info="Each patient's dots land differently")  # fmt: skip
+                    dead = gr.Slider(0, 50, value=10, step=5, label="Dead electrodes (%)",
+                                     info="Electrodes that produce no light")  # fmt: skip
+                    adaptation = gr.Slider(
+                        0, 5, value=0, step=0.5, label="Steady viewing (seconds)",
+                        info="Phosphenes fade when the image does not change",
+                    )  # fmt: skip
+                with gr.Column(scale=7, min_width=360, elem_classes="ph-sticky"):
+                    with gr.Row():
+                        drawn = gr.Image(label="What the encoder asks for", height=px,
+                                         interactive=False, buttons=no_buttons,
+                                         elem_classes="ph-display")  # fmt: skip
+                        percept = gr.Image(label="What the patient perceives", height=px,
+                                           interactive=False, buttons=no_buttons,
+                                           elem_classes="ph-display")  # fmt: skip
+                    stats = gr.HTML(padding=False)
+                    with gr.Accordion("What am I looking at?", open=False):
+                        gr.HTML(ENCODER_HELP, padding=False)
+                    gr.HTML(
+                        '<p class="ph-note">Photos are processed on the server and deleted '
+                        "within an hour. Nothing is shared or used for training.</p>"
+                    )
+            controls = [image, encoder, mode, n, dead, adaptation, seed]
+            for c in (encoder, mode, n, dead, adaptation, seed):
                 c.change(run_view, controls, [drawn, percept, stats])
-            sample.change(lambda name: SAMPLES[name](), sample, image)
-            mode.change(lambda m: gr.update(choices=encoder_choices(m)), mode, encoder)
+            image.change(run_view, controls, [drawn, percept, stats])
+            sample.input(on_sample, sample, [image, mode])
+            mode.change(on_mode, [mode, encoder], encoder)
+            demo.load(run_view, controls, [drawn, percept, stats])
 
         with gr.Tab("Calibration game"):
-            gr.Markdown(
-                "**You are the patient.** Look at the cross in the middle. When a flash appears, "
-                "click where you saw it; if you see nothing, press *Saw nothing* (near-threshold "
-                "flashes are faint, which is the point). The system chooses each question to learn "
-                "as much as possible, and uses each answer to correct its guess for the whole "
-                "array. Gray rings: where the phosphenes really are. Green: the current "
-                "estimate. Red lines: how far off each estimate is; watch them shrink."
+            gr.HTML(
+                '<p class="ph-lead">Before an implant is useful, the clinic must learn where '
+                "each electrode's dot appears. Here <b>you are the patient</b>.</p>" + GAME_STEPS
             )
             game = gr.State()
-            with gr.Row():
-                flash = gr.Image(label="Flash (click where you saw it)", height=px,
-                                 interactive=False)  # fmt: skip
-                game_map = gr.Image(label="Map: truth (gray rings), estimate (green), error (red)",
-                                    height=px, interactive=False)  # fmt: skip
-            with gr.Row():
-                saw_nothing = gr.Button("Saw nothing")
-                auto = gr.Button(f"Let the virtual patient answer {gcfg['autoplay_step']}")
-                game_seed = gr.Number(value=0, precision=0, label="Patient")
-                restart = gr.Button("New patient")
-            status = gr.Markdown()
-            plot = gr.Plot(label="Map error")
+            game_seed = gr.State(0)
+            with gr.Row(equal_height=False):
+                with gr.Column(min_width=320):
+                    flash = gr.Image(label="Your view: click where you saw the flash",
+                                     height=px, interactive=False, buttons=no_buttons,
+                                     elem_classes=["ph-display", "ph-clickable"])  # fmt: skip
+                    with gr.Row():
+                        saw_nothing = gr.Button("I saw nothing", variant="primary")
+                        auto = gr.Button(f"Answer {gcfg['autoplay_step']} for me")
+                with gr.Column(min_width=320):
+                    game_map = gr.Image(label="The system's map of the implant", height=px,
+                                        interactive=False, buttons=no_buttons,
+                                        elem_classes="ph-display")  # fmt: skip
+                    gr.HTML(LEGEND, padding=False)
+            status = gr.HTML(padding=False)
+            with gr.Row(equal_height=False):
+                plot = gr.Plot(show_label=False, scale=3)
+                with gr.Column(scale=1, min_width=200):
+                    restart = gr.Button("New patient", variant="secondary")
+                    gr.HTML('<p class="ph-note">Starts over with a different simulated '
+                            "patient.</p>")  # fmt: skip
             outs = [game, flash, game_map, status, plot]
             flash.select(clicked, game, outs)
             saw_nothing.click(nothing, game, outs)
             auto.click(autoplay, game, outs)
-            restart.click(new_game, game_seed, outs)
-            demo.load(new_game, game_seed, outs)
+            restart.click(next_patient, game_seed, [game, game_seed, *outs[1:]])
+            demo.load(new_game, game_seed, [game, game_seed, *outs[1:]])
     return demo
 
 
@@ -247,7 +369,10 @@ def smoke(cfg: dict) -> None:
         cfg["render_resolution"],
     )  # fmt: skip
     game.autoplay(gcfg["autoplay_step"])
-    print(f"game: {game_status(game).splitlines()[0]}")
+    s = game.status()
+    print(f"game: {s['queries']} queries, map error {s['location_error_deg']:.2f} deg")
+    game_status(game)
+    error_plot(game)
     build(cfg)
     print(f"UI built; smoke run took {time.perf_counter() - start:.1f} s")
 
@@ -261,7 +386,8 @@ def main() -> None:
     if args.quick:
         smoke(cfg)
         return
-    build(cfg).launch(server_name="127.0.0.1", server_port=cfg["server_port"])
+    description = "See what a cortical visual implant user might see, and help calibrate one."
+    build(cfg, warm=True).launch(server_port=cfg["server_port"], **launch_options(description))
 
 
 if __name__ == "__main__":

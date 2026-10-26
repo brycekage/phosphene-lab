@@ -82,6 +82,10 @@ class Viewer:
             self._scene_models = PretrainedSceneModels()
         return self._scene_models(images)
 
+    def warm(self) -> None:
+        """Load the scene networks now, so the first visitor does not wait ~20 s for them."""
+        self._scene(torch.zeros(1, 3, 32, 32))
+
     def _make_patient(
         self, n: int, dropout: float, seed: int
     ) -> tuple[PhospheneMap, PhospheneRenderer]:

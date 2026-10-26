@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw
 from phosphene_lab.calibration.active import ActiveCalibrator
 from phosphene_lab.calibration.baselines import SequentialCalibrator
 from phosphene_lab.calibration.common import CalibrationConfig, map_errors
+from phosphene_lab.demo.theme import COLORS, rgb
 from phosphene_lab.simulator.array import ElectrodeArray
 from phosphene_lab.simulator.patient import PatientParams, VirtualPatient
 from phosphene_lab.simulator.phosphene import PhospheneRenderer, RenderConfig
@@ -99,8 +100,9 @@ class CalibrationGame:
         }
 
     def map_image(self, size: int | None = None) -> np.ndarray:
-        """True phosphene positions (gray rings), the current estimate (green dots), and a
-        red line joining each pair, which shrinks as calibration improves. (S, S, 3) uint8."""
+        """True phosphene positions (gray rings), the current estimate (blue dots), and a
+        vermilion line joining each pair, which shrinks as calibration improves. The colors are
+        color-blind safe (see ``theme.COLORS``). (S, S, 3) uint8."""
         size = size or self.render.resolution
         half = self.render.field_deg / 2
         scale = size / self.render.field_deg
@@ -112,10 +114,12 @@ class CalibrationGame:
         draw = ImageDraw.Draw(img)
         estimate = self.calibrator.estimate()
         r = max(1.0, size / 160)
+        line = max(1, round(size / 250))
+        truth, est, err = (rgb(COLORS[k]) for k in ("truth", "estimate", "error"))
         for e in torch.nonzero(self.truth.alive)[:, 0].tolist():
             tx, ty = to_px(self.truth.x_deg[e].item(), self.truth.y_deg[e].item())
             ex, ey = to_px(estimate.x_deg[e].item(), estimate.y_deg[e].item())
-            draw.line([(tx, ty), (ex, ey)], fill=(200, 60, 60), width=1)
-            draw.ellipse([tx - r - 1, ty - r - 1, tx + r + 1, ty + r + 1], outline=(150, 150, 150))
-            draw.ellipse([ex - r, ey - r, ex + r, ey + r], fill=(60, 230, 120))
+            draw.line([(tx, ty), (ex, ey)], fill=err, width=line)
+            draw.ellipse([tx - r - 1, ty - r - 1, tx + r + 1, ty + r + 1], outline=truth)
+            draw.ellipse([ex - r, ey - r, ex + r, ey + r], fill=est)
         return np.asarray(img)

@@ -70,6 +70,7 @@ def test_e3_is_offered_only_for_modes_it_was_trained_for(tmp_path):
     (tmp_path / "e3_obstacles.pt").touch()
     (tmp_path / "e3_letters.pt").touch()
     viewer = Viewer(checkpoint_dir=tmp_path, scene_models=fake_scene_models)
+    viewer.warm()  # with injected models this must not download anything
     assert "E3" in viewer.available_encoders("navigation")
     assert "E3" in viewer.available_encoders("reading")
     assert "E3" not in viewer.available_encoders("people")

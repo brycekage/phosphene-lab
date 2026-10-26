@@ -41,10 +41,11 @@ does not know. Each round, the system picks one electrode and a current (using t
 calibration from Phase 4: the question it expects to teach it the most), the flash appears
 where that patient would really see it, and you click on it. If you see nothing (the current
 may be below that electrode's threshold, and near-threshold flashes are faint), you press
-*Saw nothing*. That is an answer too: it tells the system the threshold is higher.
+*I saw nothing*. That is an answer too: it tells the system the threshold is higher.
 
-On the right, gray rings mark where the phosphenes really are, green dots mark where the system
-currently thinks they are, and a red line joins each pair. As you answer, the red lines shrink,
+On the right, gray rings mark where the phosphenes really are, blue dots mark where the system
+currently thinks they are, and an orange-red line joins each pair. (These colors stay distinct
+for the common forms of color blindness.) As you answer, the lines shrink,
 and not only for the electrodes you were asked about: because the model knows that a misplaced
 array shifts all its neighbors together, one answer corrects a whole region.
 
@@ -54,7 +55,7 @@ pass would make it, the page tells you how many questions you saved. For the pat
 recording above, that happened after 111 questions, saving about 33 minutes of clinic time at
 5 s per question. Patients differ: on other virtual patients it can take as few as 10.
 
-If you get tired of clicking, *Let the virtual patient answer 10* hands the next ten questions
+If you get tired of clicking, *Answer 10 for me* hands the next ten questions
 to the simulated patient, who answers with the same noise and lapses as in Phase 4.
 
 ## What the demo cannot show
