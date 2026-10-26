@@ -1,0 +1,48 @@
+# Phase 6 pilot: sighted volunteers name letters and spot obstacles in simulated percepts.
+# Stimuli are rendered once by scripts/make_pilot_stimuli.py; app/pilot.py only shows them.
+# Nothing a volunteer answers is stored (see README, Phase 6).
+seed: 0
+data_root: data
+checkpoint_dir: checkpoints
+stimuli_dir: results/pilot_stimuli
+encoders: [E0, E2, E3]            # naive vs scene vs learned, as in PROJECT_SPEC Phase 6
+# One benchmark condition: 256 electrodes, 10% dead, an unseen default-variability patient.
+n_electrodes: 256
+dropout: 0.1
+variability: default
+patient_seed: 500000               # = benchmark patient_seed_offset: not an E3 training patient
+encode_render:                     # the benchmark's render settings, used for encoding
+  resolution: 32
+  field_deg: 20.0
+  max_current_uA: 100.0
+display_resolution: 128            # percepts are rendered sharper for human eyes
+display_px: 384
+limits:                            # test images to choose from (matches the benchmark cache)
+  letters: 520
+  obstacles: null
+# Test images never shown, found by checking every chosen picture by eye (2026-10-26):
+# letters 227 is labeled "n" in EMNIST but written as "m".
+exclude_images:
+  letters: [227]
+tasks:
+  letters: {classes: 10, per_class: 1, practice: 3}     # 10 letters x 3 encoders = 30 trials
+  obstacles: {classes: 4, per_class: 2, practice: 3}    # 4 classes x 2 x 3 encoders = 24
+server_port: 7861
+
+# Private Hugging Face Space for the pilot (scripts/deploy_space.py), separate from the demo.
+space:
+  repo_id: brycekage/phosphene-lab-pilot
+  private: true
+  entry: app/pilot.py
+  title: Phosphene Lab pilot
+  summary: A 10-minute test of reading letters and spotting obstacles in simulated implant vision. Nothing is saved.
+  staging_dir: results/quick/space_pilot
+  sdk_version: 6.30.0
+  copy: [src/phosphene_lab, app/pilot.py, configs/phase6_pilot.yaml, results/pilot_stimuli]
+  checkpoints: []
+
+quick:
+  stimuli_dir: results/quick/pilot_stimuli
+  tasks:
+    letters: {classes: 2, per_class: 1, practice: 1}
+    obstacles: {classes: 2, per_class: 1, practice: 1}

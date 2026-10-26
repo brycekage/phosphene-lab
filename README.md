@@ -11,7 +11,8 @@ simulated). First the viewer: one photo through the naive, edge, and scene encod
 electrodes, 30% dead electrodes, 3 s of adaptation, and a sign in reading mode with the learned
 encoder. Then the calibration game: the player is the patient, clicking where each flash
 appears; here a few answers are clicked and then the virtual patient answers the rest. This
-patient's map reached the accuracy of a full exhaustive pass (512 queries) after 111.*
+patient's map reached the accuracy of a full exhaustive pass (512 queries) after 111. Recorded
+before the app's visual redesign; the controls and results are the same.*
 
 ## Quickstart
 
@@ -20,6 +21,7 @@ uv sync
 uv run pytest
 uv run python scripts/render_reference.py --quick   # writes results/phase0_reference.png
 uv run python app/app.py                            # the demo, at http://127.0.0.1:7860
+uv run python app/pilot.py                          # the volunteer pilot, at :7861
 ```
 
 E3 in the demo needs the checkpoints from `scripts/train_e3.py` (not in git); without them the
@@ -130,6 +132,7 @@ separate (task, seed) parts.
 - [Phase 3: the benchmark](docs/how-it-works/03-benchmark.md)
 - [Phase 4: fast calibration](docs/how-it-works/04-calibration.md)
 - [Phase 5: the interactive demo](docs/how-it-works/05-demo.md)
+- [Phase 6: the volunteer pilot page](docs/how-it-works/06-pilot.md)
 
 ## Assumptions
 
@@ -227,6 +230,21 @@ Demo (Phase 5):
   the population's 0.5 deg pointing noise.
 - **Game size:** the game uses a 64-electrode array so that it can be played by hand; Phase 4
   ran 256 electrodes.
+
+Volunteer pilot (Phase 6, page built; no data collected):
+
+- **One condition:** every pilot picture comes from a single benchmark condition (256
+  electrodes, 10% dead, one unseen default patient), so the pilot cannot speak to other array
+  sizes or patients.
+- **Sharper pictures for people:** images are encoded exactly as in the benchmark but rendered
+  at 128 instead of 32 pixels, because people cannot judge a 32-pixel percept on a screen; the
+  phosphenes and currents are the same.
+- **Sighted volunteers:** sighted people looking at a screen have never learned to read
+  phosphenes, so their scores show how readable the pictures are, not how a trained implant
+  user would do.
+- **Label noise:** letter labels come from EMNIST and obstacle labels from depth sensors; every
+  chosen letter was checked by eye and one mislabeled image excluded (see
+  `configs/phase6_pilot.yaml`), but the obstacle labels follow the 1.5 m depth rule.
 
 ## Acknowledgements
 

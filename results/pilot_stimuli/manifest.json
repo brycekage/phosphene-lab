@@ -1,0 +1,531 @@
+{
+ "classes": {
+  "letters": [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e",
+   "f",
+   "g",
+   "h",
+   "i",
+   "j",
+   "k",
+   "l",
+   "m",
+   "n",
+   "o",
+   "p",
+   "q",
+   "r",
+   "s",
+   "t",
+   "u",
+   "v",
+   "w",
+   "x",
+   "y",
+   "z"
+  ],
+  "obstacles": [
+   "none",
+   "left",
+   "center",
+   "right"
+  ]
+ },
+ "trials": [
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "n",
+   "image": "letters/practice_E0_266.png",
+   "original": "letters/practice_E0_266_original.png",
+   "practice": true
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "j",
+   "image": "letters/practice_E2_238.png",
+   "original": "letters/practice_E2_238_original.png",
+   "practice": true
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "i",
+   "image": "letters/practice_E3_263.png",
+   "original": "letters/practice_E3_263_original.png",
+   "practice": true
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "o",
+   "image": "letters/trial_E0_171.png",
+   "original": "letters/trial_E0_171_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "v",
+   "image": "letters/trial_E0_320.png",
+   "original": "letters/trial_E0_320_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "l",
+   "image": "letters/trial_E0_146.png",
+   "original": "letters/trial_E0_146_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "j",
+   "image": "letters/trial_E0_231.png",
+   "original": "letters/trial_E0_231_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "f",
+   "image": "letters/trial_E0_95.png",
+   "original": "letters/trial_E0_95_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "a",
+   "image": "letters/trial_E0_253.png",
+   "original": "letters/trial_E0_253_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "x",
+   "image": "letters/trial_E0_287.png",
+   "original": "letters/trial_E0_287_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "g",
+   "image": "letters/trial_E0_397.png",
+   "original": "letters/trial_E0_397_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "e",
+   "image": "letters/trial_E0_371.png",
+   "original": "letters/trial_E0_371_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E0",
+   "label": "b",
+   "image": "letters/trial_E0_444.png",
+   "original": "letters/trial_E0_444_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "o",
+   "image": "letters/trial_E2_454.png",
+   "original": "letters/trial_E2_454_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "v",
+   "image": "letters/trial_E2_431.png",
+   "original": "letters/trial_E2_431_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "l",
+   "image": "letters/trial_E2_391.png",
+   "original": "letters/trial_E2_391_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "j",
+   "image": "letters/trial_E2_41.png",
+   "original": "letters/trial_E2_41_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "f",
+   "image": "letters/trial_E2_18.png",
+   "original": "letters/trial_E2_18_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "a",
+   "image": "letters/trial_E2_35.png",
+   "original": "letters/trial_E2_35_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "x",
+   "image": "letters/trial_E2_107.png",
+   "original": "letters/trial_E2_107_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "g",
+   "image": "letters/trial_E2_468.png",
+   "original": "letters/trial_E2_468_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "e",
+   "image": "letters/trial_E2_331.png",
+   "original": "letters/trial_E2_331_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E2",
+   "label": "b",
+   "image": "letters/trial_E2_98.png",
+   "original": "letters/trial_E2_98_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "o",
+   "image": "letters/trial_E3_506.png",
+   "original": "letters/trial_E3_506_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "v",
+   "image": "letters/trial_E3_184.png",
+   "original": "letters/trial_E3_184_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "l",
+   "image": "letters/trial_E3_339.png",
+   "original": "letters/trial_E3_339_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "j",
+   "image": "letters/trial_E3_21.png",
+   "original": "letters/trial_E3_21_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "f",
+   "image": "letters/trial_E3_91.png",
+   "original": "letters/trial_E3_91_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "a",
+   "image": "letters/trial_E3_278.png",
+   "original": "letters/trial_E3_278_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "x",
+   "image": "letters/trial_E3_356.png",
+   "original": "letters/trial_E3_356_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "g",
+   "image": "letters/trial_E3_290.png",
+   "original": "letters/trial_E3_290_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "e",
+   "image": "letters/trial_E3_334.png",
+   "original": "letters/trial_E3_334_original.png",
+   "practice": false
+  },
+  {
+   "task": "letters",
+   "encoder": "E3",
+   "label": "b",
+   "image": "letters/trial_E3_301.png",
+   "original": "letters/trial_E3_301_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "none",
+   "image": "obstacles/practice_E0_259.png",
+   "original": "obstacles/practice_E0_259_original.png",
+   "practice": true
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "center",
+   "image": "obstacles/practice_E2_90.png",
+   "original": "obstacles/practice_E2_90_original.png",
+   "practice": true
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "center",
+   "image": "obstacles/practice_E3_273.png",
+   "original": "obstacles/practice_E3_273_original.png",
+   "practice": true
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "none",
+   "image": "obstacles/trial_E0_133.png",
+   "original": "obstacles/trial_E0_133_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "none",
+   "image": "obstacles/trial_E0_164.png",
+   "original": "obstacles/trial_E0_164_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "right",
+   "image": "obstacles/trial_E0_155.png",
+   "original": "obstacles/trial_E0_155_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "right",
+   "image": "obstacles/trial_E0_58.png",
+   "original": "obstacles/trial_E0_58_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "left",
+   "image": "obstacles/trial_E0_228.png",
+   "original": "obstacles/trial_E0_228_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "left",
+   "image": "obstacles/trial_E0_18.png",
+   "original": "obstacles/trial_E0_18_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "center",
+   "image": "obstacles/trial_E0_205.png",
+   "original": "obstacles/trial_E0_205_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E0",
+   "label": "center",
+   "image": "obstacles/trial_E0_170.png",
+   "original": "obstacles/trial_E0_170_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "none",
+   "image": "obstacles/trial_E2_145.png",
+   "original": "obstacles/trial_E2_145_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "none",
+   "image": "obstacles/trial_E2_64.png",
+   "original": "obstacles/trial_E2_64_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "right",
+   "image": "obstacles/trial_E2_26.png",
+   "original": "obstacles/trial_E2_26_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "right",
+   "image": "obstacles/trial_E2_53.png",
+   "original": "obstacles/trial_E2_53_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "left",
+   "image": "obstacles/trial_E2_14.png",
+   "original": "obstacles/trial_E2_14_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "left",
+   "image": "obstacles/trial_E2_82.png",
+   "original": "obstacles/trial_E2_82_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "center",
+   "image": "obstacles/trial_E2_183.png",
+   "original": "obstacles/trial_E2_183_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E2",
+   "label": "center",
+   "image": "obstacles/trial_E2_55.png",
+   "original": "obstacles/trial_E2_55_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "none",
+   "image": "obstacles/trial_E3_192.png",
+   "original": "obstacles/trial_E3_192_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "none",
+   "image": "obstacles/trial_E3_86.png",
+   "original": "obstacles/trial_E3_86_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "right",
+   "image": "obstacles/trial_E3_19.png",
+   "original": "obstacles/trial_E3_19_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "right",
+   "image": "obstacles/trial_E3_187.png",
+   "original": "obstacles/trial_E3_187_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "left",
+   "image": "obstacles/trial_E3_212.png",
+   "original": "obstacles/trial_E3_212_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "left",
+   "image": "obstacles/trial_E3_250.png",
+   "original": "obstacles/trial_E3_250_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "center",
+   "image": "obstacles/trial_E3_148.png",
+   "original": "obstacles/trial_E3_148_original.png",
+   "practice": false
+  },
+  {
+   "task": "obstacles",
+   "encoder": "E3",
+   "label": "center",
+   "image": "obstacles/trial_E3_81.png",
+   "original": "obstacles/trial_E3_81_original.png",
+   "practice": false
+  }
+ ],
+ "condition": {
+  "n_electrodes": 256,
+  "dropout": 0.1,
+  "variability": "default",
+  "patient_seed": 500000,
+  "encoders": [
+   "E0",
+   "E2",
+   "E3"
+  ]
+ }
+}
