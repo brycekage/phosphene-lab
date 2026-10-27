@@ -16,6 +16,15 @@ export function seeded(seed) {
   };
 }
 
+// A private Hugging Face Space opens the page with a signed `__sign` token in its URL and
+// lets later requests through when their referrer is that signed page. Picture requests also
+// carry the token itself (passed on exactly as written), in case a browser or extension trims
+// the referrer.
+export function assetUrl(path, search = "") {
+  const sign = /[?&]__sign=([^&]*)/.exec(search);
+  return sign ? `${path}?__sign=${sign[1]}` : path;
+}
+
 function shuffle(items, random) {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i--) {

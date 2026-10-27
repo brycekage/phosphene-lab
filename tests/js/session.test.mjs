@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { PilotSession, seeded } from "../../app/pilot_site/session.js";
+import { PilotSession, assetUrl, seeded } from "../../app/pilot_site/session.js";
 
 const ENCODERS = ["E0", "E2", "E3"];
 const BLOCKS = ["letters", "obstacles"];
@@ -73,4 +73,11 @@ test("progress counts scored trials within the current block", () => {
   session.answer("a");
   assert.deepEqual(session.progress(), [1, 9]);
   assert.deepEqual(session.practiceProgress(), [1, 1]);
+});
+
+test("asset URLs carry a private Space's sign token, and nothing else", () => {
+  assert.equal(assetUrl("stimuli/a.png", ""), "stimuli/a.png");
+  assert.equal(assetUrl("stimuli/a.png", "?x=1"), "stimuli/a.png");
+  // Passed on exactly as Hugging Face wrote it (a JWT: letters, digits, "-", "_", ".").
+  assert.equal(assetUrl("stimuli/a.png", "?x=1&__sign=eyJ.a-b_c"), "stimuli/a.png?__sign=eyJ.a-b_c");
 });

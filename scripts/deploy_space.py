@@ -122,7 +122,10 @@ def main() -> None:
     info = api.repo_info(cfg["repo_id"], repo_type="space")
     if cfg["private"] and not info.private:
         raise SystemExit(f"{cfg['repo_id']} already exists and is public; refusing to upload")
-    api.upload_folder(folder_path=out, repo_id=cfg["repo_id"], repo_type="space")
+    # A static Space is exactly the built site: remove page files the build no longer makes.
+    stale = ["*.html", "*.js", "*.css", "stimuli/**"] if cfg.get("sdk") == "static" else None
+    api.upload_folder(folder_path=out, repo_id=cfg["repo_id"], repo_type="space",
+                      delete_patterns=stale)  # fmt: skip
     print(f"uploaded to https://huggingface.co/spaces/{cfg['repo_id']} (private={info.private})")
 
 

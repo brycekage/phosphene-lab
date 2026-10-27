@@ -2,7 +2,7 @@
 // scored trials) -> results. The three encoders' pictures are shuffled together and never
 // named until the results. Nothing is stored or sent anywhere: the page only reads its own
 // pictures, and the answers are gone when the tab closes.
-import { PilotSession } from "./session.js";
+import { PilotSession, assetUrl } from "./session.js";
 
 const BLOCKS = ["letters", "obstacles"];
 const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
@@ -56,7 +56,7 @@ function show(screen, focus) {
   (focus ?? $(screen).querySelector("h1, h2"))?.focus();
 }
 
-const picture = (path) => `stimuli/${path}`;
+const picture = (path) => assetUrl(`stimuli/${path}`, location.search);
 
 function answerWords(task, answer) {
   return task === "letters" ? answer.toUpperCase() : OBSTACLE_WORDS[answer];
@@ -197,7 +197,7 @@ $("again").addEventListener("click", () => {
 });
 
 makeButtons();
-fetch("stimuli/manifest.json")
+fetch(assetUrl("stimuli/manifest.json", location.search))
   .then((r) => {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();

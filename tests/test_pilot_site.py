@@ -34,15 +34,32 @@ def make_stimuli(folder: Path, missing: bool = False) -> Path:
     return folder
 
 
-def test_build_copies_the_page_and_every_stimulus(tmp_path):
+def test_build_writes_one_self_contained_page_and_every_stimulus(tmp_path):
+    # A private Space admits a request only when its referrer is the signed page, so a script
+    # imported by another script is refused; CSS and JS must therefore be inside index.html.
     out = tmp_path / "site"
     pilot_site.build_site(SOURCE, make_stimuli(tmp_path / "stimuli"), out)
-    for name in ("index.html", "pilot.js", "session.js", "pilot.css", "theme.css"):
-        assert (out / name).is_file(), name
+    assert sorted(p.name for p in out.iterdir()) == ["index.html", "stimuli"]
+    html = (out / "index.html").read_text(encoding="utf-8")
+    assert not re.search(r"<script[^>]*src=|<link[^>]*stylesheet", html)
+    assert "class PilotSession" in html and "function assetUrl" in html
+    assert not re.search(r"^\s*(import|export)", html, flags=re.MULTILINE)
     manifest = json.loads((out / "stimuli" / "manifest.json").read_text(encoding="utf-8"))
     for trial in manifest["trials"]:
         assert (out / "stimuli" / trial["image"]).is_file()
         assert (out / "stimuli" / trial["original"]).is_file()
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs Node.js")
+def test_inlined_script_is_valid_javascript(tmp_path):
+    out = tmp_path / "site"
+    pilot_site.build_site(SOURCE, make_stimuli(tmp_path / "stimuli"), out)
+    html = (out / "index.html").read_text(encoding="utf-8")
+    script = re.search(r'<script type="module">(.*?)</script>', html, flags=re.DOTALL).group(1)
+    (tmp_path / "page.mjs").write_text(script, encoding="utf-8")
+    result = subprocess.run(["node", "--check", str(tmp_path / "page.mjs")],
+                            capture_output=True, text=True)  # fmt: skip
+    assert result.returncode == 0, result.stderr
 
 
 def test_build_fails_loudly_on_a_missing_stimulus(tmp_path):
@@ -53,7 +70,7 @@ def test_build_fails_loudly_on_a_missing_stimulus(tmp_path):
 def test_theme_css_carries_the_shared_tokens(tmp_path):
     out = tmp_path / "site"
     pilot_site.build_site(SOURCE, make_stimuli(tmp_path / "stimuli"), out)
-    css = (out / "theme.css").read_text(encoding="utf-8")
+    css = (out / "index.html").read_text(encoding="utf-8")
     for name, value in theme.COLORS.items():
         assert f"--ph-{name.replace('_', '-')}: {value}" in css
 
