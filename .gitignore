@@ -12,6 +12,8 @@ data/
 
 # --quick smoke-run outputs; real results/ CSVs and figures ARE committed.
 results/quick/
+# built by scripts/build_pilot_site.py from committed files
+results/pilot_site/
 
 # Training artifacts.
 checkpoints/

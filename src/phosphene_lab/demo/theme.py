@@ -1,5 +1,7 @@
 """One look for the demo app and the Phase 6 pilot: a Gradio theme, a stylesheet, a head tag.
 
+The pilot is a static page (``app/pilot_site/``); it takes the same ``COLORS`` as CSS tokens.
+
 The direction is a calm, dark lab instrument: phosphenes are light on black, so the pages
 are dark too, with one warm "phosphene amber" accent for actions. The map colors (truth,
 estimate, error) come from the Okabe-Ito palette, which stays distinct under the common
@@ -159,34 +161,6 @@ footer, footer a { color: var(--ph-muted) !important; }
   text-transform: uppercase; color: var(--ph-muted); margin: 6px 0 2px;
 }
 
-/* Pilot: big, calm answer targets */
-.ph-answer-grid button { min-height: 48px; font-size: 18px; font-weight: 600; }
-.ph-letter-grid {
-  display: grid !important; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 8px;
-}
-.ph-letter-grid > * { min-width: 0 !important; width: auto !important; }
-@media (max-width: 600px) {
-  .ph-letter-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-}
-.ph-progress { height: 6px; background: var(--ph-raised); border-radius: 3px; overflow: hidden; }
-.ph-progress > div { height: 100%; background: var(--ph-accent); }
-.ph-feedback-right { border-left-color: var(--ph-estimate); }
-.ph-feedback-wrong { border-left-color: var(--ph-error); }
-.ph-kbd {
-  font-family: var(--font-mono); font-size: 12px; padding: 1px 6px; border-radius: 3px;
-  border: 1px solid var(--ph-border); background: var(--ph-raised); color: var(--ph-text);
-}
-.ph-results {
-  width: 100%; border-collapse: collapse; margin: 4px 0 18px; border: none !important;
-}
-.ph-results thead, .ph-results tbody, .ph-results tr { border: none !important; }
-.ph-results td, .ph-results th {
-  padding: 10px 12px; text-align: left; border: none !important;
-  border-bottom: 1px solid var(--ph-border) !important; background: transparent !important;
-}
-.ph-results th { color: var(--ph-muted); font-weight: 500; font-size: 13px; }
-.ph-results td:last-child, .ph-results th:last-child { white-space: nowrap; text-align: right; }
-
 /* Accessibility */
 :focus-visible { outline: 2px solid var(--ph-accent) !important; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
@@ -200,16 +174,14 @@ footer, footer a { color: var(--ph-muted) !important; }
 )
 
 
-def launch_options(description: str, js: str | None = None, max_width_px: int = 1240) -> dict:
-    """``Blocks.launch`` settings shared by both apps: this look, no API/settings/history links.
+def launch_options(description: str, js: str | None = None) -> dict:
+    """``Blocks.launch`` settings for a Gradio app: this look, no API/settings/history links.
 
     Hugging Face Spaces sets GRADIO_SERVER_NAME=0.0.0.0; locally the apps stay on loopback.
-    A step-by-step page (the pilot) reads best in a narrower column than a tool (the demo).
     """
-    width = f".gradio-container {{ max-width: {max_width_px}px !important; }}\n"
     options = {
         "server_name": os.environ.get("GRADIO_SERVER_NAME", "127.0.0.1"),
-        "theme": build_theme(), "css": CSS + width,
+        "theme": build_theme(), "css": CSS,
         "head": HEAD + f'<meta name="description" content="{html.escape(description)}">\n',
         "footer_links": ["gradio"], "run_history": False,
     }  # fmt: skip

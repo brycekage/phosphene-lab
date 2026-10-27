@@ -18,12 +18,16 @@ The full plan is in `PROJECT_SPEC.md`; read the section for the current phase be
   headless smoke run). Logic in `src/phosphene_lab/demo/`. The README GIF is browser
   screenshots of the running app in `results/quick/demo_frames/`, assembled by
   `scripts/make_demo_gif.py`.
-- Phase 6 pilot page: `scripts/make_pilot_stimuli.py` (renders `results/pilot_stimuli/` once),
-  then `.venv/Scripts/python.exe app/pilot.py` (http://127.0.0.1:7861). It saves NO answers
-  until Bryce decides on IRB. Both apps share `src/phosphene_lab/demo/theme.py` (colors, CSS,
-  launch options); keep new UI on its tokens.
-- Hugging Face Spaces: `scripts/deploy_space.py --config configs/demo.yaml` (demo) or
-  `--config configs/phase6_pilot.yaml` (pilot). Both private; `--quick` only stages.
+- Phase 6 pilot page: a static HTML/JS page in `app/pilot_site/` (session rules in
+  `session.js`, tested by `tests/js/session.test.mjs` through pytest; needs Node).
+  `scripts/make_pilot_stimuli.py` renders `results/pilot_stimuli/` once, then
+  `scripts/build_pilot_site.py` writes `results/pilot_site/` (git-ignored); preview with
+  `python -m http.server 7861 -d results/pilot_site`. It saves NO answers and calls no other
+  site until Bryce decides on IRB. Colors come from `src/phosphene_lab/demo/theme.py`
+  (`theme.css` is generated); keep new UI on its tokens.
+- Hugging Face Spaces: `scripts/deploy_space.py --config configs/demo.yaml` (demo, Gradio:
+  needs a paid PRO account, not deployed) or `--config configs/phase6_pilot.yaml` (pilot,
+  free static Space). Both private; `--quick` only stages.
 - E2 targets are cached in `data/<dataset>/targets_*.npy`, keyed by image content hash.
 - Configs load via `phosphene_lab.config.load_config`; every `quick:` block must redirect outputs
   to `results/quick/` (git-ignored) so smoke runs never overwrite real results.

@@ -1,0 +1,94 @@
+/* Pilot page layout. Colors come only from the --ph-* tokens in theme.css (from theme.py). */
+* { box-sizing: border-box; }
+html { color-scheme: dark; }
+body {
+  margin: 0; background: var(--ph-bg); color: var(--ph-text);
+  font: 16px/1.55 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 820px; margin: 0 auto; padding: 28px 16px 48px; }
+[hidden] { display: none !important; }
+/* Resets have zero specificity (:where) so the one spacing rule below always wins. */
+:where(h1, h2, p, ul, figure) { margin: 0; }
+section > * + *, #intro-body > * + *, #results-body > * + * { margin-top: 16px; }
+h1, h2 { line-height: 1.2; }
+h1 { font-size: 28px; }
+h2 { font-size: 22px; }
+h1:focus, h2:focus, .ph-callout:focus { outline: none; }
+b { font-weight: 600; }
+
+.ph-eyebrow {
+  font-family: ui-monospace, "JetBrains Mono", Consolas, monospace; font-size: 12px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ph-accent);
+}
+.ph-header > * + * { margin-top: 8px; }
+.ph-lead { color: var(--ph-muted); font-size: 16px; }
+.ph-note { color: var(--ph-muted); font-size: 14px; }
+.ph-error { color: var(--ph-text); }
+.ph-steps { padding-left: 20px; }
+.ph-steps li { margin: 3px 0; }
+.ph-callout {
+  border-left: 3px solid var(--ph-accent); background: var(--ph-raised);
+  padding: 10px 14px; border-radius: 4px;
+}
+.ph-feedback-right { border-left-color: var(--ph-estimate); }
+.ph-feedback-wrong { border-left-color: var(--ph-error); }
+.ph-section-title {
+  font-family: ui-monospace, "JetBrains Mono", Consolas, monospace; font-size: 12px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--ph-muted);
+}
+.ph-kbd {
+  font-family: ui-monospace, Consolas, monospace; font-size: 12px; padding: 1px 6px;
+  border-radius: 3px; border: 1px solid var(--ph-border); background: var(--ph-raised);
+}
+
+/* Buttons: one primary action per screen, large targets for the answers */
+.ph-button {
+  display: block; width: 100%; min-height: 48px; padding: 10px 16px; border-radius: 6px;
+  font: inherit; font-size: 17px; font-weight: 600; cursor: pointer;
+  color: var(--ph-text); background: var(--ph-raised); border: 1px solid var(--ph-border);
+  transition: background-color 0.12s;
+}
+.ph-button:hover { background: var(--ph-border); }
+.ph-primary { color: var(--ph-on-accent); background: var(--ph-accent); border-color: var(--ph-accent); }
+.ph-primary:hover { background: var(--ph-accent-hover); }
+.ph-button:disabled { cursor: progress; opacity: 0.7; }
+
+/* Pictures: black field, thin frame, never larger than the screen allows */
+.ph-display {
+  background: black; border: 1px solid var(--ph-border); border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.ph-display img {
+  display: block; width: min(384px, 100%, 52vh); height: auto; aspect-ratio: 1;
+  object-fit: contain; image-rendering: auto;
+}
+figcaption { color: var(--ph-muted); font-size: 13px; padding: 6px 0 8px; }
+.ph-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+#trial > .ph-progress { margin-top: 8px; }
+.ph-progress { height: 6px; background: var(--ph-raised); border-radius: 3px; overflow: hidden; }
+.ph-progress > div { height: 100%; width: 0; background: var(--ph-accent); }
+
+.ph-answers { display: grid; gap: 8px; }
+.ph-answers .ph-button { font-size: 18px; padding: 8px 4px; }
+.ph-letter-grid { grid-template-columns: repeat(13, minmax(0, 1fr)); }
+.ph-obstacle-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.ph-results { width: 100%; border-collapse: collapse; margin: 4px 0 18px; }
+.ph-results th, .ph-results td {
+  padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--ph-border);
+}
+.ph-results th { color: var(--ph-muted); font-weight: 500; font-size: 13px; }
+.ph-results td:last-child, .ph-results th:last-child { white-space: nowrap; text-align: right; }
+
+:focus-visible { outline: 2px solid var(--ph-accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+@media (max-width: 600px) {
+  main { padding-top: 18px; }
+  h1 { font-size: 24px; }
+  .ph-letter-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .ph-obstacle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ph-pair { grid-template-columns: 1fr; }
+}

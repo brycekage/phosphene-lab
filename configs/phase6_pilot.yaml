@@ -1,10 +1,12 @@
 # Phase 6 pilot: sighted volunteers name letters and spot obstacles in simulated percepts.
-# Stimuli are rendered once by scripts/make_pilot_stimuli.py; app/pilot.py only shows them.
+# Stimuli are rendered once by scripts/make_pilot_stimuli.py; scripts/build_pilot_site.py puts
+# them next to the static page in app/pilot_site/, which only shows them.
 # Nothing a volunteer answers is stored (see README, Phase 6).
 seed: 0
 data_root: data
 checkpoint_dir: checkpoints
 stimuli_dir: results/pilot_stimuli
+site_dir: results/pilot_site         # the page + pictures, ready to host
 encoders: [E0, E2, E3]            # naive vs scene vs learned, as in PROJECT_SPEC Phase 6
 # One benchmark condition: 256 electrodes, 10% dead, an unseen default-variability patient.
 n_electrodes: 256
@@ -27,22 +29,22 @@ exclude_images:
 tasks:
   letters: {classes: 10, per_class: 1, practice: 3}     # 10 letters x 3 encoders = 30 trials
   obstacles: {classes: 4, per_class: 2, practice: 3}    # 4 classes x 2 x 3 encoders = 24
-server_port: 7861
+server_port: 7861                  # local preview: python -m http.server 7861 -d <site_dir>
 
 # Private Hugging Face Space for the pilot (scripts/deploy_space.py), separate from the demo.
+# A static Space: free, no server; the page runs in the visitor's browser.
 space:
   repo_id: brycekage/phosphene-lab-pilot
   private: true
-  entry: app/pilot.py
+  sdk: static
+  site_dir: results/pilot_site
   title: Phosphene Lab pilot
   summary: A 10-minute test of reading letters and spotting obstacles in simulated implant vision. Nothing is saved.
   staging_dir: results/quick/space_pilot
-  sdk_version: 6.30.0
-  copy: [src/phosphene_lab, app/pilot.py, configs/phase6_pilot.yaml, results/pilot_stimuli]
-  checkpoints: []
 
 quick:
   stimuli_dir: results/quick/pilot_stimuli
+  site_dir: results/quick/pilot_site
   tasks:
     letters: {classes: 2, per_class: 1, practice: 1}
     obstacles: {classes: 2, per_class: 1, practice: 1}

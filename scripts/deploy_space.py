@@ -1,9 +1,14 @@
-"""Phase 5: stage the demo as a Hugging Face Space and upload it (private by default).
+"""Stage a Hugging Face Space and upload it (private by default).
 
-The Space gets exactly what the app needs: the package source, ``app/app.py``, the configs,
-the E3 checkpoints, a root ``app.py`` shim that puts ``src/`` on the path, a pinned
-``requirements.txt`` (CPU torch), and a Space README. Everything is staged in a git-ignored
-folder first so you can inspect what will be uploaded.
+A Gradio Space (the demo, ``configs/demo.yaml``) gets exactly what the app needs: the package
+source, ``app/app.py``, the configs, the E3 checkpoints, a root ``app.py`` shim that puts
+``src/`` on the path, a pinned ``requirements.txt`` (CPU torch), and a Space README. Hugging
+Face hosts Gradio Spaces only with a paid PRO account.
+
+A static Space (the pilot, ``configs/phase6_pilot.yaml``, ``sdk: static``) gets the folder
+built by ``scripts/build_pilot_site.py`` and a README; static Spaces are free.
+
+Everything is staged in a git-ignored folder first so you can inspect what will be uploaded.
 
 Upload needs a Hugging Face write token (``hf auth login``).
 
@@ -44,10 +49,7 @@ title: {title}
 emoji: 👁
 colorFrom: indigo
 colorTo: gray
-sdk: gradio
-sdk_version: {sdk_version}
-python_version: "3.11"
-app_file: app.py
+{sdk_lines}
 pinned: false
 ---
 
@@ -65,9 +67,25 @@ def requirements() -> str:
     return "\n".join(lines) + "\n"
 
 
+def readme(cfg: dict) -> str:
+    if cfg.get("sdk", "gradio") == "static":
+        sdk_lines = "sdk: static\napp_file: index.html"
+    else:
+        sdk_lines = (f"sdk: gradio\nsdk_version: {cfg['sdk_version']}\n"
+                     'python_version: "3.11"\napp_file: app.py')  # fmt: skip
+    return README.format(sdk_lines=sdk_lines, title=cfg["title"], summary=cfg["summary"])
+
+
 def stage(cfg: dict, out: Path) -> None:
     if out.exists():
         shutil.rmtree(out)
+    if cfg.get("sdk", "gradio") == "static":
+        site = Path(cfg["site_dir"])
+        if not (site / "index.html").is_file():
+            raise SystemExit(f"{site} has no index.html; run scripts/build_pilot_site.py first")
+        shutil.copytree(site, out)
+        (out / "README.md").write_text(readme(cfg), encoding="utf-8")
+        return
     out.mkdir(parents=True)
     for item in cfg["copy"] + cfg["checkpoints"]:
         src, dst = Path(item), out / item
@@ -78,7 +96,7 @@ def stage(cfg: dict, out: Path) -> None:
             shutil.copy2(src, dst)
     (out / "app.py").write_text(SHIM.format(entry=cfg["entry"]), encoding="utf-8")
     (out / "requirements.txt").write_text(requirements(), encoding="utf-8")
-    (out / "README.md").write_text(README.format(**cfg), encoding="utf-8")
+    (out / "README.md").write_text(readme(cfg), encoding="utf-8")
 
 
 def main() -> None:
@@ -98,7 +116,7 @@ def main() -> None:
 
     api = HfApi()
     api.create_repo(
-        cfg["repo_id"], repo_type="space", space_sdk="gradio",
+        cfg["repo_id"], repo_type="space", space_sdk=cfg.get("sdk", "gradio"),
         private=cfg["private"], exist_ok=True,
     )  # fmt: skip
     info = api.repo_info(cfg["repo_id"], repo_type="space")

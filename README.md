@@ -20,7 +20,8 @@ uv sync
 uv run pytest
 uv run python scripts/render_reference.py --quick   # writes results/phase0_reference.png
 uv run python app/app.py                            # the demo, at http://127.0.0.1:7860
-uv run python app/pilot.py                          # the volunteer pilot, at :7861
+uv run python scripts/build_pilot_site.py          # the volunteer pilot, a static page:
+uv run python -m http.server 7861 -d results/pilot_site   # open http://127.0.0.1:7861
 ```
 
 E3 in the demo needs the checkpoints from `scripts/train_e3.py` (not in git); without them the

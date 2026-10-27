@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description"
+        content="A 10-minute test of reading letters and spotting obstacles in simulated implant vision.">
+  <title>Phosphene Lab · Volunteer pilot</title>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="pilot.css">
+  <script type="module" src="pilot.js"></script>
+</head>
+<body>
+<main>
+  <section id="welcome">
+    <header class="ph-header">
+      <p class="ph-eyebrow">Phosphene Lab · volunteer pilot</p>
+      <h1 tabindex="-1">Can you see with an implant's eyes?</h1>
+      <p class="ph-lead">People who are blind may one day see again through an implant in the
+        visual cortex. It would not show a picture, only a few hundred dots of light. This
+        short test asks how well people can use those dots, and which way of drawing them
+        works best.</p>
+    </header>
+    <ul class="ph-steps">
+      <li><b>About 10 minutes</b>, in two parts: reading letters, then spotting obstacles.</li>
+      <li>Each part starts with <b>3 practice rounds</b> that show you the answer.</li>
+      <li>Many pictures are hard on purpose. <b>Guess when unsure</b>; there is no penalty.</li>
+    </ul>
+    <div class="ph-callout">
+      <b>Your answers are not saved.</b> They stay in this browser tab and disappear when you
+      close it. This is an informal pilot, not a research study, and no results are published.
+    </div>
+    <p class="ph-note">Works best on a laptop or desktop, in a dim room. Keyboard shortcuts
+      are available.</p>
+    <button class="ph-button ph-primary ph-key-enter" id="begin" disabled>Loading…</button>
+    <p class="ph-note ph-error" id="load-error" role="alert" hidden></p>
+  </section>
+
+  <section id="intro" hidden>
+    <p class="ph-eyebrow" id="intro-part"></p>
+    <h2 id="intro-title" tabindex="-1"></h2>
+    <div id="intro-body"></div>
+    <button class="ph-button ph-primary ph-key-enter" id="start-part">Start practice</button>
+  </section>
+
+  <section id="trial" hidden>
+    <p class="ph-section-title" id="progress-label"></p>
+    <div class="ph-progress" id="progress" role="progressbar" aria-valuemin="0"
+         aria-valuemax="100" aria-labelledby="progress-label"><div></div></div>
+    <h2 id="prompt" tabindex="-1"></h2>
+    <div class="ph-display"><img id="stimulus" alt="" width="384" height="384"></div>
+    <div class="ph-answers ph-letter-grid" id="letters-grid" hidden></div>
+    <div class="ph-answers ph-obstacle-grid" id="obstacles-grid" hidden></div>
+  </section>
+
+  <section id="feedback" hidden>
+    <div class="ph-callout" id="feedback-message" tabindex="-1"></div>
+    <div class="ph-pair">
+      <figure class="ph-display"><img id="seen" alt="" width="384" height="384">
+        <figcaption>What you saw</figcaption></figure>
+      <figure class="ph-display"><img id="truth" alt="" width="384" height="384">
+        <figcaption>What the camera saw</figcaption></figure>
+    </div>
+    <button class="ph-button ph-primary ph-key-enter" id="next">Next</button>
+  </section>
+
+  <section id="results" hidden>
+    <div id="results-body"></div>
+    <button class="ph-button" id="again">Start over</button>
+  </section>
+
+  <noscript><p class="ph-callout">This test needs JavaScript turned on.</p></noscript>
+</main>
+</body>
+</html>

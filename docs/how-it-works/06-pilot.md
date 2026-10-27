@@ -5,7 +5,8 @@ trained to read percepts. The obvious question is whether people agree with it. 
 beat E0 for the observer, do they also help a human? The pilot page lets sighted volunteers
 answer that, in about ten minutes, in a web browser.
 
-`uv run python app/pilot.py` opens it at http://127.0.0.1:7861.
+`uv run python scripts/build_pilot_site.py` puts it in `results/pilot_site/`; serve that folder
+with `uv run python -m http.server 7861 -d results/pilot_site` and open http://127.0.0.1:7861.
 
 ## What a volunteer does
 
@@ -38,6 +39,11 @@ pictures come without feedback.
 The pictures are made once by `scripts/make_pilot_stimuli.py` and saved in
 `results/pilot_stimuli/`, so the page needs no datasets and no neural networks. That makes it
 start in seconds, and it means every volunteer sees exactly the same set.
+
+It also means the page needs no server at all. It is plain HTML and JavaScript
+(`app/pilot_site/`): the browser downloads the pictures and runs the whole test itself, and the
+answers never leave the browser tab. That is why it can be hosted for free as a static page,
+while the demo, which runs neural networks on each photo, needs a computer behind it.
 
 ## What it does not do (yet)
 
