@@ -104,7 +104,10 @@ CSS = (
     + _tokens()
     + "\n}\n"
     + """
-.gradio-container { max-width: 1240px !important; margin: 0 auto !important; }
+/* Full width up to the cap; otherwise Gradio shrinks the page to its content and tabs jump */
+.gradio-container {
+  width: 100% !important; max-width: 1240px !important; margin: 0 auto !important;
+}
 footer, footer a { color: var(--ph-muted) !important; }
 
 /* Header */

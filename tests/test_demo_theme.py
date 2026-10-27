@@ -44,6 +44,8 @@ def test_theme_builds_and_css_uses_the_tokens():
         assert f"--ph-{name.replace('_', '-')}: {value}" in css
     assert "prefers-reduced-motion" in css
     assert ":focus-visible" in css
+    # The page keeps one width across tabs instead of shrinking to each tab's content.
+    assert re.search(r"\.gradio-container \{\s*width: 100% !important", css)
     # Every color in the stylesheet comes from a token, not a stray literal.
     body = css.split("}", 1)[1]
     assert not re.findall(r"#[0-9a-fA-F]{6}\b", body)
