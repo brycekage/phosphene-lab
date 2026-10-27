@@ -52,7 +52,7 @@ array shifts all its neighbors together, one answer corrects a whole region.
 The counter compares you with the standard approach, a full exhaustive pass of 8 questions per
 electrode (512 questions for this 64-electrode array). When your map is as accurate as that
 pass would make it, the page tells you how many questions you saved. For the patient in the
-recording above, that happened after 111 questions, saving about 33 minutes of clinic time at
+recording above, that happened after 101 questions, saving about 34 minutes of clinic time at
 5 s per question. Patients differ: on other virtual patients it can take as few as 10.
 
 If you get tired of clicking, *Answer 10 for me* hands the next ten questions

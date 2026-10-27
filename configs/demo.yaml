@@ -15,13 +15,13 @@ gif:
   frames_dir: results/quick/demo_frames
   output: results/phase5_demo.gif
   width: 900
-  # (first frame, last frame, crop bottom in screenshot pixels (2100 x 1425), seconds per frame)
+  # (first frame, last frame, crop bottom in screenshot pixels (2100 x 1899), seconds per frame)
   segments:
-    - [1, 8, 1385, 3.5]          # viewer: encoders, electrode count, dead electrodes, adaptation
-    - [9, 9, 1235, 3.0]          # game: the first flash
-    - [10, 12, 1235, 1.5]        # three answers by clicking
-    - [13, 17, 1235, 1.2]        # the virtual patient answers 10 at a time
-    - [18, 18, 1235, 5.0]        # exhaustive-pass accuracy reached
+    - [1, 8, 1830, 3.0]          # viewer: E2, E0, E1, 64 / 1024 electrodes, dead, adaptation
+    - [9, 9, 1830, 3.0]          # game: the first flash
+    - [10, 12, 1830, 1.5]        # three answers by clicking
+    - [13, 21, 1830, 0.9]        # the virtual patient answers 10 at a time
+    - [22, 22, 1830, 6.0]        # exhaustive-pass accuracy reached (101 questions)
 
 quick:                           # headless smoke run: no browser, no network weights
   game: {n_electrodes: 16, patient_config: configs/phase4_calibration.yaml,

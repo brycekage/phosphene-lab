@@ -7,12 +7,11 @@ Work in progress; see [PROJECT_SPEC.md](PROJECT_SPEC.md) for the plan.
 calibration game](results/phase5_demo.gif)
 
 *The demo app (`app/app.py`, 46 s, real screenshots of the running app; all patients are
-simulated). First the viewer: one photo through the naive, edge, and scene encoders, then 1600
-electrodes, 30% dead electrodes, 3 s of adaptation, and a sign in reading mode with the learned
-encoder. Then the calibration game: the player is the patient, clicking where each flash
-appears; here a few answers are clicked and then the virtual patient answers the rest. This
-patient's map reached the accuracy of a full exhaustive pass (512 queries) after 111. Recorded
-before the app's visual redesign; the controls and results are the same.*
+simulated). First the viewer: one photo through the scene, naive, and edge encoders, then the
+scene encoder with 64 and 1024 electrodes, 40% dead electrodes, and 2 s and 5 s of steady
+viewing (adaptation). Then the calibration game: the player is the patient, clicking where each
+flash appears; here a few answers are clicked and then the virtual patient answers the rest.
+This patient's map reached the accuracy of a full exhaustive pass (512 queries) after 101.*
 
 ## Quickstart
 
